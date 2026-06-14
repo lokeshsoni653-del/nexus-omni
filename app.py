@@ -102,6 +102,52 @@ UNI_SHORT = {
 
 RANK_MEDALS = ["🥇", "🥈", "🥉", "〔4〕"]
 
+# ── Dynamic Naming & Styling Helpers ──────────────────────────────────────────
+from urllib.parse import urlparse
+
+def extract_uni_name(url: str, default_name: str) -> str:
+    url_stripped = url.strip().rstrip("/")
+    if not url_stripped:
+        return default_name
+    # Check if matches the default URL of the default_name
+    if url_stripped == UNIVERSITIES.get(default_name, "").strip().rstrip("/"):
+        return default_name
+    # Check if matches any other default URL
+    for name, def_url in UNIVERSITIES.items():
+        if url_stripped == def_url.strip().rstrip("/"):
+            return name
+    # Otherwise extract cleanly from domain
+    try:
+        parsed = urlparse(url_stripped)
+        netloc = parsed.netloc or parsed.path
+        if netloc.startswith("www."):
+            netloc = netloc[4:]
+        # Remove common domain extensions
+        for ext in [".edu.pk", ".org.pk", ".gov.pk", ".com.pk", ".edu", ".org", ".com", ".pk"]:
+            if netloc.endswith(ext):
+                netloc = netloc[:-len(ext)]
+        # Split by dots or hyphens and capitalize
+        parts = re.split(r"[\.\-]", netloc)
+        return " ".join(p.upper() for p in parts if p)
+    except Exception:
+        return default_name
+
+def get_uni_short(name: str) -> str:
+    if name in UNI_SHORT:
+        return UNI_SHORT[name]
+    # Fallback: clean up display name to a short word
+    parts = name.split()
+    if len(parts) == 1:
+        return parts[0][:10]
+    return "".join(p[0] for p in parts if p)[:6].upper()
+
+def get_uni_color(name: str) -> str:
+    if name in UNI_COLORS:
+        return UNI_COLORS[name]
+    # Generate a consistent color based on hash of the name
+    colors = ["#22c55e", "#06b6d4", "#a855f7", "#ec4899", "#f59e0b", "#3b82f6"]
+    return colors[hash(name) % len(colors)]
+
 # Shared Plotly layout theme
 _PLY = dict(
     paper_bgcolor="rgba(0,0,0,0)",
@@ -556,7 +602,7 @@ def _compute_scores(r: dict) -> dict:
 #  SECTION 6: PRESCRIPTION ENGINE — ACTION PLAN GENERATOR
 # ==============================================================================
 
-def generate_prescriptions(d: dict) -> list:
+def generate_prescriptions(d: dict, name: str = "SABS University") -> list:
     """
     Analyse SABS audit data and generate a prioritised list of action items.
     Each item has impact (1-10) and effort (1-10) scores used to plot the
@@ -586,6 +632,10 @@ def generate_prescriptions(d: dict) -> list:
             )
         })
 
+    # Retrieve dynamic URL
+    uni_url = d.get("final_url") or UNIVERSITIES.get(name, "https://www.example.com")
+    short_name = get_uni_short(name)
+
     # ── CRITICAL ──────────────────────────────────────────────────────────────
     if "noindex" in d.get("robots_meta","").lower():
         _add("Remove NOINDEX Directive",
@@ -600,7 +650,7 @@ def generate_prescriptions(d: dict) -> list:
     if tl == 0:
         _add("Add Missing <title> Tag",
              "No title tag found. Google auto-generates a poor replacement. This is the #1 on-page ranking factor.",
-             "Add <title>SABS — School of Art, Business & Sciences Karachi</title> (50–60 chars).",
+             f"Add <title>{name} — Official Homepage</title> (50–60 chars).",
              "The <title> tag directly determines which keywords a page ranks for in Google.",
              10, 1, "📋 Meta Tags", "20 min", "Estimated +25–40% organic visibility")
     elif tl < 50:
@@ -621,13 +671,13 @@ def generate_prescriptions(d: dict) -> list:
     if dl == 0:
         _add("Write Meta Description",
              "No meta description found. Google generates its own snippet — usually irrelevant to search intent.",
-             "Add <meta name='description' content='...'> with a compelling 150–160 char summary including a call-to-action.",
+             f"Add <meta name='description' content='...'> with a compelling 150–160 char summary for {short_name} including a call-to-action.",
              "Meta descriptions are the 'free ad copy' in Google SERPs. They directly drive click-through rate.",
              9, 1, "📋 Meta Tags", "20 min", "Estimated +15–25% CTR improvement")
     elif dl < 150:
         _add(f"Expand Meta Description ({dl} → 150–160 chars)",
              f"Description is only {dl} chars — leaving SERP preview space empty and reducing appeal.",
-             "Expand to 150–160 chars with: what SABS offers, why choose SABS, and a call-to-action.",
+             f"Expand to 150–160 chars with: what {short_name} offers, why choose {short_name}, and a call-to-action.",
              "A well-crafted 155-char description acts as free ad copy, increasing qualified click-throughs.",
              7, 1, "📋 Meta Tags", "15 min", "Estimated +8–12% CTR improvement")
     elif dl > 160:
@@ -641,7 +691,7 @@ def generate_prescriptions(d: dict) -> list:
     if not d.get("canonical"):
         _add("Add Canonical URL Tag",
              "No canonical tag found. Google may split PageRank between www vs non-www and http vs https versions.",
-             "Add <link rel='canonical' href='https://www.sabs.edu.pk/'> inside <head> on every page.",
+             f"Add <link rel='canonical' href='{uni_url}'> inside <head> on every page.",
              "Canonical tags consolidate duplicate content signals and prevent PageRank dilution across URL variants.",
              8, 2, "🔧 Technical SEO", "30 min", "Consolidates split link equity")
 
@@ -650,7 +700,7 @@ def generate_prescriptions(d: dict) -> list:
     if h1c == 0:
         _add("Add Single H1 Tag",
              "No H1 found. Googlebot cannot identify the page's primary topic without it.",
-             "Add exactly ONE H1 containing your primary keyword: e.g., <h1>School of Art & Design — Karachi</h1>.",
+             f"Add exactly ONE H1 containing your primary keyword: e.g., <h1>{name} — Official Portal</h1>.",
              "The H1 is the page's topical declaration. It directly tells Google's ranking algorithm the primary subject.",
              10, 1, "🏗️ DOM Structure", "20 min", "Estimated +20–35% keyword relevancy signal")
     elif h1c > 1:
@@ -663,14 +713,14 @@ def generate_prescriptions(d: dict) -> list:
     if d.get("h2_count", 0) < 2:
         _add(f"Add H2 Subheadings (found: {d.get('h2_count',0)})",
              "Fewer than 2 H2 tags. H2s create the document outline and build sub-topic keyword signals.",
-             "Add H2 headings for: Programmes, Admissions, Faculty, Student Work, Events — with target keywords.",
+             "Add H2 headings for primary sections — with target keywords.",
              "H2/H3 tags expand topical coverage, helping the page rank for long-tail queries beyond the primary keyword.",
              6, 3, "🏗️ DOM Structure", "2 hours", "Estimated +10–20% long-tail keyword visibility")
 
     # ── SCHEMA ────────────────────────────────────────────────────────────────
     if not d.get("has_json_ld"):
         _add("Implement JSON-LD Schema Markup",
-             "No structured data found. SABS is ineligible for Rich Results (programme cards, FAQ boxes) in Google.",
+             f"No structured data found. {short_name} is ineligible for Rich Results (programme cards, FAQ boxes) in Google.",
              "Add JSON-LD for: EducationalOrganization, CollegeOrUniversity, Course, and FAQPage (admissions questions).",
              "JSON-LD enables Rich Results in Google SERPs, increasing SERP real estate by 3× and driving 20–30% higher CTR.",
              8, 5, "⚙️ Schema Markup", "1 day", "Rich Results eligibility (+20–30% CTR)")
@@ -678,15 +728,15 @@ def generate_prescriptions(d: dict) -> list:
     # ── SOCIAL ────────────────────────────────────────────────────────────────
     if not d.get("has_og_title"):
         _add("Add OpenGraph Meta Tags (og:title, og:description, og:image)",
-             "No OG tags found. SABS page shares on WhatsApp, LinkedIn, and Instagram show blank previews — damaging brand perception.",
-             "Add og:title, og:description (155 chars), og:image (1200×630px campus photo), og:url to every page.",
-             "Pakistani art schools share heavily on social media. Every blank preview share is a lost engagement and referral visit.",
+             f"No OG tags found. {short_name} page shares on WhatsApp, LinkedIn, and social networks show blank previews.",
+             f"Add og:title, og:description (155 chars), og:image (campus photo), and og:url to every page.",
+             "Visual sharing is highly critical for branding. Every blank preview share is a lost referral visit.",
              7, 2, "📱 Social Media", "2 hours", "Professional social previews — 3× higher share engagement")
     elif not d.get("has_og_image"):
         _add("Add og:image Tag",
-             "og:title and description present but no preview image. Social shares appear blank — critical for an art school.",
-             "Add <meta property='og:image' content='https://sabs.edu.pk/campus-hero.jpg'>. Use 1200×630px.",
-             "For an art school, a blank social preview image is especially damaging — the institution itself is visual.",
+             "og:title and description present but no preview image. Social shares appear blank.",
+             f"Add <meta property='og:image' content='{uni_url}/campus-hero.jpg'> inside <head>.",
+             "A visual preview image is especially critical for campus branding and social sharing appeal.",
              6, 1, "📱 Social Media", "30 min", "3× higher social share engagement")
 
     # ── ACCESSIBILITY ─────────────────────────────────────────────────────────
@@ -697,32 +747,32 @@ def generate_prescriptions(d: dict) -> list:
         imp = min(9, 5 + miss // 5)
         eff = min(7, 2 + miss // 15)
         _add(f"Add Alt Text to {miss} Image(s) ({pct}% uncovered)",
-             f"{miss} of {total_i} images lack alt attributes. For an art school, images are the product — and they're invisible to Google Image Search.",
-             f"Add descriptive alt text to all {miss} flagged images. Include keywords: e.g., alt='Graphic Design student portfolio SABS Karachi'.",
-             "Alt text is how Google indexes images. Missing alt = invisible in Google Image Search, which is a major organic traffic channel for visual institutions.",
-             imp, eff, "♿ Accessibility", f"{'4 hrs' if miss<20 else '1–2 days'}", "Unlocks Google Image Search traffic for art content")
+             f"{miss} of {total_i} images lack alt attributes, making them invisible to search crawlers.",
+             f"Add descriptive alt text to all {miss} flagged images. Include keywords: e.g., alt='{short_name} student portfolio work'.",
+             "Alt text is how Google indexes images. Missing alt = invisible in Google Image Search, which is a major organic traffic channel.",
+             imp, eff, "♿ Accessibility", f"{'4 hrs' if miss<20 else '1–2 days'}", "Unlocks Google Image Search traffic for media content")
 
     # ── CONTENT ───────────────────────────────────────────────────────────────
     wc = d.get("word_count", 0)
     if wc < 300:
         _add(f"Dramatically Expand Content ({wc:,} → 800+ words)",
              f"Only {wc:,} words found. Thin content is a primary cause of poor rankings. Google's Helpful Content System penalises this.",
-             "Add: About SABS, Programmes offered, Faculty profiles, Student achievements, Admissions process, Campus life (800+ words total).",
+             "Add comprehensive pages about: Programs offered, Faculty profiles, Achievements, Admissions, and Campus life.",
              "Pages with 800+ words rank 2–3 positions higher than thin pages. Comprehensive content signals topical authority to Google.",
              9, 8, "📝 Content", "1 week", "Estimated +30–50% ranking positions")
     elif wc < 800:
         _add(f"Expand Content Depth ({wc:,} → 800+ words)",
              f"At {wc:,} words, content is below the threshold associated with strong competitive rankings.",
-             "Expand with: student testimonials, programme learning outcomes, faculty expertise, industry connections.",
+             "Expand with: campus details, course outcomes, faculty expertise, and student life information.",
              "Long-form content (800+ words) ranks for 2× more keywords than short pages, expanding organic visibility.",
              7, 6, "📝 Content", "3 days", "Estimated +15–25% keyword coverage")
 
     fk = d.get("fk_reading_ease")
     if fk is not None and fk < 50:
         _add(f"Simplify Writing Style (FK Ease: {fk} → 60+)",
-             f"Content scores {fk}/100 on Flesch-Kincaid — expert/academic difficulty. General visitors and prospective students disengage.",
+             f"Content scores {fk}/100 on Flesch-Kincaid — expert/academic difficulty. General visitors disengage.",
              "Use shorter sentences (15-20 words), simpler vocabulary, active voice. Target Grade 8–9 reading level.",
-             "High readability correlates with lower bounce rates and higher dwell time — indirect behavioural ranking signals.",
+             "High readability correlates with lower bounce rates and higher dwell time — indirect ranking signals.",
              6, 7, "📝 Content", "3–5 days", "Estimated 15–25% bounce rate reduction")
 
     # ── PERFORMANCE ───────────────────────────────────────────────────────────
@@ -731,13 +781,13 @@ def generate_prescriptions(d: dict) -> list:
         _add(f"Optimise Server TTFB ({ttfb:.0f}ms → <200ms)",
              f"TTFB of {ttfb:.0f}ms is classified 'Poor' by Google Core Web Vitals — 3× above the acceptable threshold.",
              "Upgrade hosting, enable server caching, implement CDN (Cloudflare free tier), enable GZIP compression.",
-             "TTFB is a direct Core Web Vitals signal. Poor TTFB reduces Googlebot crawl budget — pages crawled less = rank slower.",
+             "TTFB is a direct Core Web Vitals signal. Poor TTFB reduces Googlebot crawl budget.",
              9, 9, "⚡ Performance", "1–2 weeks", "Estimated +2–3 ranking positions")
     elif ttfb > 200:
         _add(f"Improve Server TTFB ({ttfb:.0f}ms → <200ms)",
              f"TTFB of {ttfb:.0f}ms is in 'Needs Improvement' range. Faster server = better UX = better rankings.",
              "Enable server-side caching, compress images, enable Gzip, consider Cloudflare CDN.",
-             "Even 100ms TTFB improvement correlates with measurable user engagement gains and crawl frequency.",
+             "Even 100ms TTFB improvement correlates with measurable user engagement gains.",
              7, 7, "⚡ Performance", "3–5 days", "Improved Core Web Vitals score")
 
     # ── HTML5 SEMANTICS ───────────────────────────────────────────────────────
@@ -746,9 +796,9 @@ def generate_prescriptions(d: dict) -> list:
     if sem < 5:
         miss_sem = [f"<{t}>" for t, p in sem_tags.items() if not p]
         _add(f"Add HTML5 Semantic Landmarks ({sem}/7 present)",
-             f"Missing: {', '.join(miss_sem)}. These help Googlebot identify page regions and improve WCAG accessibility.",
+             f"Missing: {', '.join(miss_sem)}. These help Googlebot identify page regions and improve accessibility.",
              f"Wrap page regions with missing semantic elements. No design changes required — HTML structure only.",
-             "HTML5 landmarks improve crawler comprehension and accessibility. Google's Page Experience update factors both into rankings.",
+             "HTML5 landmarks improve crawler comprehension and accessibility.",
              5, 3, "🏗️ DOM Structure", "2 hours", "Better Googlebot page comprehension")
 
     # ── LINK ARCHITECTURE ─────────────────────────────────────────────────────
@@ -756,8 +806,8 @@ def generate_prescriptions(d: dict) -> list:
     if il < 10:
         _add(f"Build Internal Link Structure ({il} → 10+ links)",
              f"Only {il} internal links found. PageRank cannot flow through the site — important pages receive no link equity.",
-             "Add contextual links from homepage to: Programmes, Admissions, Faculty, Events, Gallery, Contact.",
-             "Internal links distribute PageRank and help Googlebot discover all pages. Sparse linking = poor crawl coverage.",
+             "Add contextual links from homepage to other primary site sections.",
+             "Internal links distribute PageRank and help Googlebot discover all pages.",
              7, 5, "🔗 Link Architecture", "1 day", "Better PageRank distribution across all pages")
 
     # Sort: highest impact first, then lowest effort (quick wins bubble up)
@@ -772,10 +822,11 @@ def generate_prescriptions(d: dict) -> list:
 def render_launcher_ui(is_re_run=False):
     # Retrieve current session state values if they exist, else default values
     saved_url_map = st.session_state.get("url_map", {})
-    sabs_val = saved_url_map.get("SABS University", UNIVERSITIES["SABS University"])
-    nca_val  = saved_url_map.get("NCA Lahore",         UNIVERSITIES["NCA Lahore"])
-    ivs_val  = saved_url_map.get("Indus Valley (IVS)", UNIVERSITIES["Indus Valley (IVS)"])
-    bnu_val  = saved_url_map.get("Beaconhouse (BNU)",  UNIVERSITIES["Beaconhouse (BNU)"])
+    saved_urls = list(saved_url_map.values()) if saved_url_map else []
+    sabs_val = saved_urls[0] if len(saved_urls) > 0 else UNIVERSITIES["SABS University"]
+    nca_val  = saved_urls[1] if len(saved_urls) > 1 else UNIVERSITIES["NCA Lahore"]
+    ivs_val  = saved_urls[2] if len(saved_urls) > 2 else UNIVERSITIES["Indus Valley (IVS)"]
+    bnu_val  = saved_urls[3] if len(saved_urls) > 3 else UNIVERSITIES["Beaconhouse (BNU)"]
 
     if not is_re_run:
         # Show full giant Cyberpunk-style Hero Header
@@ -834,11 +885,16 @@ def render_launcher_ui(is_re_run=False):
     launch_btn = st.button(btn_label, use_container_width=True)
 
     if launch_btn:
+        sabs_name = extract_uni_name(sabs_url, "SABS University")
+        nca_name  = extract_uni_name(nca_url, "NCA Lahore")
+        ivs_name  = extract_uni_name(ivs_url, "Indus Valley (IVS)")
+        bnu_name  = extract_uni_name(bnu_url, "Beaconhouse (BNU)")
+
         url_map = {
-            "SABS University":    sabs_url.strip(),
-            "NCA Lahore":         nca_url.strip(),
-            "Indus Valley (IVS)": ivs_url.strip(),
-            "Beaconhouse (BNU)":  bnu_url.strip(),
+            sabs_name: sabs_url.strip(),
+            nca_name:  nca_url.strip(),
+            ivs_name:  ivs_url.strip(),
+            bnu_name:  bnu_url.strip(),
         }
         urls_tuple = tuple(url_map.items())
 
@@ -897,25 +953,28 @@ def _no_data():
 # ──────────────────────────────────────────────────────────────────────────────
 
 def render_war_room(all_data: dict):
+    url_map = st.session_state.get("url_map", {})
+    primary_name = list(url_map.keys())[0] if url_map else "SABS University"
+
     _page_header("⚔  THE WAR ROOM",
-                 "LIVE COMPETITIVE INTELLIGENCE · PAKISTAN ART UNIVERSITY DIGITAL RANKINGS")
+                 f"LIVE COMPETITIVE INTELLIGENCE · {get_uni_short(primary_name).upper()} DIGITAL RANKINGS")
 
     # Build comparison dataframe
     rows = []
     for name, d in all_data.items():
         if "error" in d:
             rows.append({
-                "University": name, "Short": UNI_SHORT[name],
+                "University": name, "Short": get_uni_short(name),
                 "Score": 0, "TTFB": 9999,
                 "Meta": 0, "Structure": 0, "Access": 0, "Content": 0,
                 "Schema": False, "OG": False, "H1_ok": False,
                 "Words": 0, "Imgs_miss": 0, "Canonical": False,
-                "Color": UNI_COLORS[name], "Status": "OFFLINE",
+                "Color": get_uni_color(name), "Status": "OFFLINE",
             })
         else:
             sc = d.get("scores", {})
             rows.append({
-                "University": name, "Short": UNI_SHORT[name],
+                "University": name, "Short": get_uni_short(name),
                 "Score": d.get("global_score", 0),
                 "TTFB": d.get("ttfb_ms", 0),
                 "Meta": sc.get("Meta Health", 0),
@@ -928,7 +987,7 @@ def render_war_room(all_data: dict):
                 "Words": d.get("word_count", 0),
                 "Imgs_miss": d.get("missing_alt_count", 0),
                 "Canonical": bool(d.get("canonical")),
-                "Color": UNI_COLORS[name], "Status": "ONLINE",
+                "Color": get_uni_color(name), "Status": "ONLINE",
             })
 
     df = pd.DataFrame(rows).sort_values("Score", ascending=False).reset_index(drop=True)
@@ -943,7 +1002,7 @@ def render_war_room(all_data: dict):
         rank_i = int(row["Rank"]) - 1
         medal = RANK_MEDALS[rank_i] if rank_i < 4 else str(int(row["Rank"]))
         color = row["Color"]
-        is_sabs = row["University"] == "SABS University"
+        is_sabs = row["University"] == primary_name
         row_bg = f"rgba({int(color[1:3],16)},{int(color[3:5],16)},{int(color[5:7],16)},0.08)" if is_sabs else "rgba(0,0,0,0)"
         border_left = f"border-left:3px solid {color};" if is_sabs else ""
         score = int(row["Score"])
@@ -1031,7 +1090,7 @@ border:1px solid rgba(0,212,255,0.2);border-radius:8px;overflow:hidden;">
         r_int = int(color[1:3],16)
         g_int = int(color[3:5],16)
         b_int = int(color[5:7],16)
-        is_sabs = name == "SABS University"
+        is_sabs = name == primary_name
 
         fig_radar.add_trace(go.Scatterpolar(
             r=vals_loop, theta=cats_loop,
@@ -1039,7 +1098,7 @@ border:1px solid rgba(0,212,255,0.2);border-radius:8px;overflow:hidden;">
             fillcolor=f"rgba({r_int},{g_int},{b_int},{'0.18' if is_sabs else '0.06'})",
             line=dict(color=color, width=3 if is_sabs else 1.5,
                       dash="solid" if is_sabs else "dot"),
-            name=UNI_SHORT[name],
+            name=get_uni_short(name),
             hovertemplate=f"<b>{name}</b><br>%{{theta}}: %{{r}}/25<extra></extra>",
         ))
 
@@ -1070,7 +1129,7 @@ border:1px solid rgba(0,212,255,0.2);border-radius:8px;overflow:hidden;">
         d_uni = all_data.get(name, {})
         sc = d_uni.get("scores", {}) if "error" not in d_uni else {}
         fig_bar.add_trace(go.Bar(
-            name=UNI_SHORT[name],
+            name=get_uni_short(name),
             x=pillars,
             y=[sc.get(p,0) for p in pillars],
             marker_color=row["Color"],
@@ -1096,27 +1155,27 @@ border:1px solid rgba(0,212,255,0.2);border-radius:8px;overflow:hidden;">
     st.plotly_chart(fig_bar, use_container_width=True, config={"displayModeBar": False})
 
     # ── SABS Competitive Gap Summary ──────────────────────────────────────────
-    _section_header("SABS COMPETITIVE GAP ANALYSIS")
-    sabs_d = all_data.get("SABS University", {})
+    _section_header(f"{get_uni_short(primary_name).upper()} COMPETITIVE GAP ANALYSIS")
+    sabs_d = all_data.get(primary_name, {})
     if "error" not in sabs_d:
         sabs_score = sabs_d.get("global_score", 0)
         competitors = [(n, d) for n, d in all_data.items()
-                       if n != "SABS University" and "error" not in d]
+                       if n != primary_name and "error" not in d]
         if competitors:
             best_name, best_d = max(competitors, key=lambda x: x[1].get("global_score",0))
             best_score = best_d.get("global_score", 0)
             gap = round(best_score - sabs_score, 1)
             gap_color = "#ff2d55" if gap > 10 else ("#ffb800" if gap > 0 else "#00ff88")
-            sabs_rank = int(df[df["University"]=="SABS University"]["Rank"].values[0])
+            sabs_rank = int(df[df["University"]==primary_name]["Rank"].values[0])
 
             g1, g2, g3, g4 = st.columns(4)
-            g1.metric("SABS CURRENT RANK",     f"#{sabs_rank} of 4",
+            g1.metric(f"{get_uni_short(primary_name).upper()} CURRENT RANK",     f"#{sabs_rank} of 4",
                       "Beating all" if sabs_rank==1 else f"Behind {sabs_rank-1} rival(s)")
-            g2.metric("SABS GLOBAL SCORE",     f"{sabs_score}/100", "")
+            g2.metric(f"{get_uni_short(primary_name).upper()} GLOBAL SCORE",     f"{sabs_score}/100", "")
             g3.metric("LEADER SCORE",           f"{best_score}/100",
-                      best_name.split()[0])
+                      get_uni_short(best_name))
             g4.metric("POINTS GAP TO LEADER",   f"{abs(gap)} pts",
-                      "SABS IS LEADING 🏆" if gap <= 0 else f"Must close {gap} pts gap")
+                      f"{get_uni_short(primary_name).upper()} IS LEADING 🏆" if gap <= 0 else f"Must close {gap} pts gap")
 
             if gap > 0:
                 st.markdown("<br>", unsafe_allow_html=True)
@@ -1126,7 +1185,7 @@ border:1px solid rgba(0,212,255,0.2);border-radius:8px;overflow:hidden;">
                 gap_data = []
                 for p in pillars:
                     diff = sabs_sc.get(p,0) - best_sc.get(p,0)
-                    gap_data.append({"Pillar": p, "SABS": sabs_sc.get(p,0),
+                    gap_data.append({"Pillar": p, get_uni_short(primary_name): sabs_sc.get(p,0),
                                      "Leader": best_sc.get(p,0), "Gap": diff})
                 gap_df = pd.DataFrame(gap_data).sort_values("Gap")
 
@@ -1141,7 +1200,7 @@ border:1px solid rgba(0,212,255,0.2);border-radius:8px;overflow:hidden;">
                 ))
                 fig_gap.update_layout(
                     **_PLY, height=220,
-                    title=dict(text=f"SABS vs {best_name.split()[0]} — Score Gap Per Pillar",
+                    title=dict(text=f"{get_uni_short(primary_name)} vs {get_uni_short(best_name)} — Score Gap Per Pillar",
                                font=dict(family="Share Tech Mono",color="#7a9bb5",size=11)),
                     xaxis=dict(gridcolor="rgba(0,212,255,0.06)",
                                title=dict(text="Points Behind (negative) / Ahead (positive)",
@@ -1157,8 +1216,8 @@ border:1px solid rgba(0,212,255,0.2);border-radius:8px;overflow:hidden;">
 #  PAGE 2: SABS DEEP AUDIT
 # ──────────────────────────────────────────────────────────────────────────────
 
-def render_deep_audit(d: dict):
-    _page_header("🔬  SABS DEEP AUDIT", "TECHNICAL SEO DIAGNOSTICS · DOM · SCHEMA · ACCESSIBILITY")
+def render_deep_audit(d: dict, name: str = "SABS University"):
+    _page_header(f"🔬  {get_uni_short(name).upper()} DEEP AUDIT", f"TECHNICAL SEO DIAGNOSTICS · DOM · SCHEMA · ACCESSIBILITY")
 
     # ── Top KPIs ──────────────────────────────────────────────────────────────
     c1,c2,c3,c4,c5 = st.columns(5)
@@ -1177,7 +1236,7 @@ def render_deep_audit(d: dict):
     st.markdown("<br>", unsafe_allow_html=True)
 
     # ── Radar ─────────────────────────────────────────────────────────────────
-    _section_header("SABS SEO HEALTH RADAR")
+    _section_header(f"{get_uni_short(name).upper()} SEO HEALTH RADAR")
     scores = d.get("scores",{})
     cats = list(scores.keys())
     vals = list(scores.values())
@@ -1185,7 +1244,7 @@ def render_deep_audit(d: dict):
     fig_r = go.Figure()
     fig_r.add_trace(go.Scatterpolar(r=vl,theta=cl,fill="toself",
         fillcolor="rgba(0,212,255,0.12)",
-        line=dict(color="#00d4ff",width=2.5),name="SABS",
+        line=dict(color="#00d4ff",width=2.5),name=get_uni_short(name),
         hovertemplate="<b>%{theta}</b><br>%{r}/25<extra></extra>"))
     fig_r.add_trace(go.Scatterpolar(r=[25]*len(cl),theta=cl,fill="toself",
         fillcolor="rgba(0,102,255,0.04)",
@@ -1311,15 +1370,15 @@ def render_deep_audit(d: dict):
 #  PAGE 3: PRESCRIPTION ENGINE
 # ──────────────────────────────────────────────────────────────────────────────
 
-def render_prescription_engine(d: dict):
+def render_prescription_engine(d: dict, name: str = "SABS University"):
     _page_header("💊  PRESCRIPTION ENGINE",
                  "PRIORITISED ACTION PLAN · IMPACT/EFFORT MATRIX · 30-DAY ROADMAP")
 
-    prescriptions = generate_prescriptions(d)
+    prescriptions = generate_prescriptions(d, name)
     total = len(prescriptions)
 
     if total == 0:
-        st.success("✦  No significant issues found. SABS is in excellent SEO health!")
+        st.success(f"✦  No significant issues found. {get_uni_short(name)} is in excellent SEO health!")
         return
 
     # ── Summary Banner ────────────────────────────────────────────────────────
@@ -1497,17 +1556,19 @@ def render_prescription_engine(d: dict):
 # ==============================================================================
 
 all_data  = st.session_state.get("all_data",  None)
-sabs_data = (all_data or {}).get("SABS University", None)
+url_map   = st.session_state.get("url_map", {})
+sabs_name = list(url_map.keys())[0] if url_map else "SABS University"
+sabs_data = (all_data or {}).get(sabs_name, None)
 
 if all_data is None:
     render_launcher_ui()
 else:
     # Header with a small expander to adjust settings
-    _md("""
+    _md(f"""
     <div style="display:flex;justify-content:space-between;align-items:center;padding:0.5rem 0 1rem 0;border-bottom:1px solid rgba(0,212,255,0.15);margin-bottom:1.5rem;">
         <div>
             <span style="font-family:'Orbitron',monospace;font-size:1.8rem;font-weight:900;color:#00d4ff;text-shadow:0 0 10px rgba(0,212,255,0.5);letter-spacing:0.12em;">⚔ SENTINEL</span>
-            <span style="font-family:'Share Tech Mono',monospace;font-size:0.75rem;color:#3d5a73;margin-left:1rem;letter-spacing:0.15em;">v1.0 SCAN COMPLETE</span>
+            <span style="font-family:'Share Tech Mono',monospace;font-size:0.75rem;color:#3d5a73;margin-left:1rem;letter-spacing:0.15em;">v1.0 SCAN COMPLETE — PRIMARY TARGET: {sabs_name.upper()}</span>
         </div>
     </div>
     """)
@@ -1518,7 +1579,7 @@ else:
     # Main navigation tabs
     tab_war_room, tab_deep_audit, tab_prescription = st.tabs([
         "⚔️  THE WAR ROOM",
-        "🔬  SABS DEEP AUDIT",
+        f"🔬  {get_uni_short(sabs_name).upper()} DEEP AUDIT",
         "💊  PRESCRIPTION ENGINE"
     ])
 
@@ -1527,16 +1588,16 @@ else:
 
     with tab_deep_audit:
         if sabs_data is None:
-            st.warning("No SABS data available.")
+            st.warning(f"No {get_uni_short(sabs_name)} data available.")
         elif "error" in sabs_data:
-            st.error(f"⛔  Could not reach SABS University: {sabs_data['error']}")
+            st.error(f"⛔  Could not reach {sabs_name}: {sabs_data['error']}")
         else:
-            render_deep_audit(sabs_data)
+            render_deep_audit(sabs_data, sabs_name)
 
     with tab_prescription:
         if sabs_data is None:
-            st.warning("No SABS data available.")
+            st.warning(f"No {get_uni_short(sabs_name)} data available.")
         elif "error" in sabs_data:
-            st.error(f"⛔  Could not reach SABS University: {sabs_data['error']}")
+            st.error(f"⛔  Could not reach {sabs_name}: {sabs_data['error']}")
         else:
-            render_prescription_engine(sabs_data)
+            render_prescription_engine(sabs_data, sabs_name)
