@@ -941,7 +941,7 @@ def render_war_room(all_data: dict):
     table_rows = ""
     for _, row in df.iterrows():
         rank_i = int(row["Rank"]) - 1
-        medal = RANK_ICONS[rank_i] if rank_i < 4 else str(int(row["Rank"]))
+        medal = RANK_MEDALS[rank_i] if rank_i < 4 else str(int(row["Rank"]))
         color = row["Color"]
         is_sabs = row["University"] == "SABS University"
         row_bg = f"rgba({int(color[1:3],16)},{int(color[3:5],16)},{int(color[5:7],16)},0.08)" if is_sabs else "rgba(0,0,0,0)"
