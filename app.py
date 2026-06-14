@@ -1482,7 +1482,9 @@ def render_sov_simulator(all_data: dict):
             )])
             
             fig.update_layout(
-                **_PLY,
+                paper_bgcolor="rgba(0,0,0,0)",
+                plot_bgcolor="rgba(0,0,0,0)",
+                font=dict(family="Share Tech Mono, monospace", color="#7a9bb5", size=11),
                 showlegend=False,
                 height=260,
                 margin=dict(l=10, r=10, t=10, b=10)
