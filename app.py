@@ -1949,6 +1949,24 @@ def render_prescription_engine(d: dict, name: str = "SABS University"):
 def render_ai_agent(all_data: dict, url_map: dict):
     _page_header("🤖  SENTINEL AI CO-PILOT", "AUTONOMOUS SEO AGENT · META REWRITING · DEVELOPER TICKET GENERATION")
     
+    def make_serializable(d: dict) -> dict:
+        if not d:
+            return {}
+        clean_d = {}
+        for k, v in d.items():
+            if k == "keywords_df":
+                if hasattr(v, "to_dict"):
+                    clean_d[k] = v.to_dict(orient="records")
+                else:
+                    clean_d[k] = str(v)
+            elif isinstance(v, dict):
+                clean_d[k] = make_serializable(v)
+            elif isinstance(v, list):
+                clean_d[k] = [make_serializable(item) if isinstance(item, dict) else item for item in v]
+            else:
+                clean_d[k] = v
+        return clean_d
+
     _md("""
     <div style="background:rgba(10,22,40,0.45);border:1px solid rgba(0,212,255,0.12);
     border-radius:8px;padding:1.1rem;margin-bottom:1.5rem;line-height:1.6;font-size:0.82rem;color:#7a9bb5;">
@@ -2001,6 +2019,8 @@ def render_ai_agent(all_data: dict, url_map: dict):
     dispatch = st.button("⚡  DISPATCH SENTINEL AGENT", use_container_width=True)
     
     if dispatch:
+        serializable_target = make_serializable(target_data)
+        
         # Construct prompt
         if preset == "Draft engineering tickets (Jira/GitHub) for audit fixes":
             prompt = f"""
@@ -2013,7 +2033,7 @@ For each ticket, include:
 - Acceptance Criteria
 
 SEO Telemetry Data for {target_uni}:
-{json.dumps(target_data, indent=2)}
+{json.dumps(serializable_target, indent=2)}
 """
         elif preset == "Rewrite Meta Title and Description for target keywords":
             prompt = f"""
@@ -2053,7 +2073,7 @@ The user has asked the following question about {target_uni}'s digital performan
 "{custom_prompt}"
 
 Here is the crawled SEO telemetry data for {target_uni}:
-{json.dumps(target_data, indent=2)}
+{json.dumps(serializable_target, indent=2)}
 
 Please answer their query comprehensively using the telemetry data above.
 """
