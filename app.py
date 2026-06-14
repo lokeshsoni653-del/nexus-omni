@@ -150,9 +150,10 @@ html, body, [data-testid="stAppViewContainer"], [data-testid="stApp"] {
     background-size: 45px 45px;
     pointer-events: none; z-index: 0;
 }
-#MainMenu, footer, header,
+#MainMenu, footer,
 [data-testid="stToolbar"], [data-testid="stDecoration"],
 [data-testid="stStatusWidget"] { display: none !important; }
+[data-testid="stHeader"] { background: transparent !important; }
 
 [data-testid="stSidebar"] {
     background: linear-gradient(180deg,#030810 0%,#050e1a 100%) !important;
