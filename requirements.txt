@@ -26,3 +26,8 @@ nltk>=3.8.1
 # --- Extras ---
 certifi>=2024.2.2    # SSL certificate bundle for HTTPS scraping
 charset-normalizer>=3.3.2
+
+# --- Custom Enhancements ---
+fpdf2>=2.7.9
+google-generativeai>=0.5.4
+

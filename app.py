@@ -816,6 +816,190 @@ def generate_prescriptions(d: dict, name: str = "SABS University") -> list:
 
 
 # ==============================================================================
+#  SECTION 6.5: PDF REPORT GENERATION
+# ==============================================================================
+
+def generate_pdf_report(all_data: dict, url_map: dict) -> bytes:
+    try:
+        from fpdf import FPDF
+    except ImportError:
+        return b""
+
+    class SentinelPDF(FPDF):
+        def header(self):
+            # Cyberpunk Sentinel page background/header
+            self.set_fill_color(2, 5, 9) # var(--bg-abyss)
+            self.rect(0, 0, 210, 297, "F")
+            
+            # Header text
+            self.set_font("Courier", "B", 10)
+            self.set_text_color(0, 212, 255) # #00d4ff
+            self.cell(0, 10, "⚔ SENTINEL DIGITAL DOMINANCE REPORT", border=0, ln=1, align="L")
+            self.set_draw_color(0, 212, 255)
+            self.line(10, 18, 200, 18)
+            self.ln(5)
+            
+        def footer(self):
+            self.set_y(-15)
+            self.set_font("Courier", "I", 8)
+            self.set_text_color(122, 155, 181)
+            self.cell(0, 10, f"SENTINEL v1.0 | Page {self.page_no()}/{{nb}}", align="C")
+
+    pdf = SentinelPDF()
+    pdf.alias_nb_pages()
+    pdf.set_margins(15, 25, 15)
+    pdf.add_page()
+    
+    # Cover / Header Details
+    pdf.set_font("Courier", "B", 20)
+    pdf.set_text_color(0, 212, 255)
+    pdf.cell(0, 15, "SEO TELEMETRY REPORT", ln=1, align="L")
+    
+    pdf.set_font("Courier", "", 10)
+    pdf.set_text_color(232, 244, 248) # text-primary
+    
+    import datetime
+    timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    pdf.cell(0, 8, f"CRAWL DATE/TIME: {timestamp} (PKT)", ln=1)
+    
+    # Target URLs
+    pdf.ln(5)
+    pdf.set_font("Courier", "B", 12)
+    pdf.set_text_color(0, 212, 255)
+    pdf.cell(0, 8, "TARGET ROSTER:", ln=1)
+    pdf.set_font("Courier", "", 10)
+    pdf.set_text_color(232, 244, 248)
+    for name, url in url_map.items():
+        pdf.cell(0, 6, f"- {name}: {url}", ln=1)
+        
+    pdf.ln(10)
+    
+    # Competitor League Table
+    pdf.set_font("Courier", "B", 14)
+    pdf.set_text_color(0, 212, 255)
+    pdf.cell(0, 8, "1. DIGITAL DOMINANCE LEAGUE TABLE", ln=1)
+    pdf.line(15, pdf.get_y(), 200, pdf.get_y())
+    pdf.ln(5)
+    
+    # Table headers
+    pdf.set_font("Courier", "B", 9)
+    pdf.set_text_color(122, 155, 181)
+    pdf.cell(15, 6, "RANK", 1, 0, "C")
+    pdf.cell(60, 6, "UNIVERSITY", 1, 0, "L")
+    pdf.cell(20, 6, "SCORE", 1, 0, "C")
+    pdf.cell(20, 6, "TTFB", 1, 0, "C")
+    pdf.cell(60, 6, "PILLAR SCORES (META/STR/ACC/CON)", 1, 1, "C")
+    
+    pdf.set_font("Courier", "", 9)
+    pdf.set_text_color(232, 244, 248)
+    
+    # Build dataframe for rank
+    rows = []
+    for name, d in all_data.items():
+        if "error" in d:
+            rows.append((name, 0, "OFFLINE", 0, 0, 0, 0))
+        else:
+            sc = d.get("scores", {})
+            rows.append((
+                name,
+                d.get("global_score", 0),
+                f"{d.get('ttfb_ms', 0):.0f}ms",
+                sc.get("Meta Health", 0),
+                sc.get("DOM Structure", 0),
+                sc.get("Accessibility", 0),
+                sc.get("Content Quality", 0)
+            ))
+            
+    # Sort by score descending
+    rows.sort(key=lambda x: -x[1])
+    for rank, (name, score, ttfb, meta, struct, access, content) in enumerate(rows, 1):
+        pdf.cell(15, 6, f"#{rank}", 1, 0, "C")
+        pdf.cell(60, 6, name[:30], 1, 0, "L")
+        pdf.cell(20, 6, f"{score}/100", 1, 0, "C")
+        pdf.cell(20, 6, ttfb, 1, 0, "C")
+        pdf.cell(60, 6, f"{meta}/25 | {struct}/25 | {access}/25 | {content}/25", 1, 1, "C")
+        
+    pdf.ln(10)
+    
+    # Audit details for primary protagonist
+    primary_name = list(url_map.keys())[0] if url_map else "SABS University"
+    primary_data = all_data.get(primary_name, {})
+    
+    pdf.set_font("Courier", "B", 14)
+    pdf.set_text_color(0, 212, 255)
+    pdf.cell(0, 8, f"2. DEEP AUDIT: {primary_name.upper()}", ln=1)
+    pdf.line(15, pdf.get_y(), 200, pdf.get_y())
+    pdf.ln(5)
+    
+    if "error" in primary_data:
+        pdf.set_font("Courier", "", 10)
+        pdf.set_text_color(255, 45, 85)
+        pdf.cell(0, 8, f"Crawl Error: {primary_data['error']}", ln=1)
+    else:
+        pdf.set_font("Courier", "B", 10)
+        pdf.set_text_color(122, 155, 181)
+        pdf.cell(80, 6, "METRIC", 1, 0, "L")
+        pdf.cell(100, 6, "VALUE / STAT", 1, 1, "L")
+        
+        pdf.set_font("Courier", "", 10)
+        pdf.set_text_color(232, 244, 248)
+        
+        kpis = [
+            ("Global Health Score", f"{primary_data.get('global_score', 0)}/100"),
+            ("Response TTFB", f"{primary_data.get('ttfb_ms', 0)} ms"),
+            ("Document Title", primary_data.get("title", "NOT FOUND")[:65]),
+            ("Meta Description", primary_data.get("description", "NOT FOUND")[:65] + ("..." if len(primary_data.get("description", "")) > 65 else "")),
+            ("Word Count", f"{primary_data.get('word_count', 0):,} words"),
+            ("Heading Counts", f"H1: {primary_data.get('h1_count', 0)} | H2: {primary_data.get('h2_count', 0)} | H3: {primary_data.get('h3_count', 0)}"),
+            ("Images (Alt Missing)", f"Total: {primary_data.get('total_images', 0)} (Missing: {primary_data.get('missing_alt_count', 0)})"),
+            ("Internal Links", f"{primary_data.get('internal_links', 0)} links"),
+            ("JSON-LD Structured Data", "PRESENT" if primary_data.get("has_json_ld") else "MISSING"),
+            ("OpenGraph Social Graph", "OPTIMAL" if primary_data.get("has_og_title") and primary_data.get("has_og_description") else "INCOMPLETE")
+        ]
+        
+        for k, v in kpis:
+            pdf.cell(80, 6, k, 1, 0, "L")
+            pdf.cell(100, 6, str(v), 1, 1, "L")
+            
+        pdf.ln(10)
+        
+        # Prescriptions
+        pdf.set_font("Courier", "B", 14)
+        pdf.set_text_color(0, 212, 255)
+        pdf.cell(0, 8, "3. RECOMMENDATION ACTION ROADMAP", ln=1)
+        pdf.line(15, pdf.get_y(), 200, pdf.get_y())
+        pdf.ln(5)
+        
+        prescriptions = generate_prescriptions(primary_data, primary_name)
+        if not prescriptions:
+            pdf.set_font("Courier", "", 10)
+            pdf.set_text_color(0, 255, 136)
+            pdf.cell(0, 8, "No outstanding high-priority issues found. Site is healthy!", ln=1)
+        else:
+            pdf.set_font("Courier", "B", 9)
+            pdf.set_text_color(122, 155, 181)
+            pdf.cell(10, 6, "ID", 1, 0, "C")
+            pdf.cell(85, 6, "RECOMMENDED FIX", 1, 0, "L")
+            pdf.cell(15, 6, "IMPACT", 1, 0, "C")
+            pdf.cell(15, 6, "EFFORT", 1, 0, "C")
+            pdf.cell(30, 6, "CATEGORY", 1, 0, "C")
+            pdf.cell(25, 6, "FIX TIME", 1, 1, "C")
+            
+            pdf.set_font("Courier", "", 8.5)
+            pdf.set_text_color(232, 244, 248)
+            for i, p in enumerate(prescriptions[:15], 1): # limit to top 15 fixes
+                pdf.cell(10, 6, f"#{i}", 1, 0, "C")
+                pdf.cell(85, 6, p["title"][:48], 1, 0, "L")
+                pdf.cell(15, 6, f"{p['impact']}/10", 1, 0, "C")
+                pdf.cell(15, 6, f"{p['effort']}/10", 1, 0, "C")
+                pdf.cell(30, 6, p["category"][-12:], 1, 0, "C")
+                pdf.cell(25, 6, p["fix_time"], 1, 1, "C")
+
+    # Output to bytes
+    return bytes(pdf.output())
+
+
+# ==============================================================================
 #  SECTION 7: LAUNCHER PANEL (MAIN PAGE CONTROL CENTER)
 # ==============================================================================
 
@@ -1211,6 +1395,202 @@ border:1px solid rgba(0,212,255,0.2);border-radius:8px;overflow:hidden;">
                 )
                 st.plotly_chart(fig_gap, use_container_width=True, config={"displayModeBar": False})
 
+    # Call SERP Share of Voice Simulator
+    st.markdown("<br>", unsafe_allow_html=True)
+    render_sov_simulator(all_data)
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+#  SERP SHARE-OF-VOICE SIMULATOR
+# ──────────────────────────────────────────────────────────────────────────────
+
+def render_sov_simulator(all_data: dict):
+    _section_header("🔮 SERP SHARE-OF-VOICE (SOV) SIMULATOR")
+    
+    _md("""
+    <div style="background:rgba(10,22,40,0.45);border:1px solid rgba(0,212,255,0.12);
+    border-radius:8px;padding:1rem;margin-bottom:1.5rem;line-height:1.6;font-size:0.82rem;color:#7a9bb5;">
+        Simulate Google Search results for the university keyword category. 
+        Adjust the organic rank position sliders below for each university. The engine will dynamically compute the click-through rates (CTR) based on their ranking and visualize their relative traffic share of voice.
+    </div>
+    """)
+    
+    # Sliders for each university
+    col1, col2 = st.columns(2, gap="large")
+    
+    unis = list(all_data.keys())
+    ranks = {}
+    
+    with col1:
+        st.markdown("<div style='font-family:Share Tech Mono;font-size:0.8rem;color:#00d4ff;margin-bottom:0.6rem;text-transform:uppercase;'>■ Rank Inputs (1 = Top Rank, 30 = Invisible)</div>", unsafe_allow_html=True)
+        for i, name in enumerate(unis):
+            default_rank = min(30, (i * 3) + 1)
+            ranks[name] = st.slider(
+                f"Google Rank for {get_uni_short(name)}",
+                min_value=1,
+                max_value=30,
+                value=default_rank,
+                key=f"sov_rank_{name.lower().replace(' ', '_')}"
+            )
+            
+    # Calculate CTR based on ranks
+    def get_ctr(rank: int) -> float:
+        if rank == 1: return 31.2
+        if rank == 2: return 15.6
+        if rank == 3: return 9.8
+        if rank == 4: return 6.2
+        if rank == 5: return 4.3
+        if rank == 6: return 3.1
+        if rank == 7: return 2.3
+        if rank == 8: return 1.7
+        if rank == 9: return 1.3
+        if rank == 10: return 1.0
+        if 11 <= rank <= 15: return 0.7
+        if 16 <= rank <= 20: return 0.4
+        return 0.1
+        
+    ctrs = {name: get_ctr(rank) for name, rank in ranks.items()}
+    total_ctr = sum(ctrs.values())
+    
+    with col2:
+        st.markdown("<div style='font-family:Share Tech Mono;font-size:0.8rem;color:#00d4ff;margin-bottom:0.6rem;text-transform:uppercase;'>■ Simulated Traffic Share</div>", unsafe_allow_html=True)
+        if total_ctr > 0:
+            shares = {name: (ctr / total_ctr) * 100 for name, ctr in ctrs.items()}
+            
+            # Render Plotly donut chart
+            labels = [get_uni_short(n) for n in shares.keys()]
+            values = list(shares.values())
+            colors = [get_uni_color(n) for n in shares.keys()]
+            
+            fig = go.Figure(data=[go.Pie(
+                labels=labels,
+                values=values,
+                hole=0.45,
+                marker=dict(colors=colors, line=dict(color="rgba(2, 5, 9, 0.8)", width=2)),
+                hoverinfo="label+percent",
+                textinfo="label+percent",
+                textfont=dict(family="Share Tech Mono", size=11, color="#e8f4f8")
+            )])
+            
+            fig.update_layout(
+                **_PLY,
+                showlegend=False,
+                height=260,
+                margin=dict(l=10, r=10, t=10, b=10)
+            )
+            st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+        else:
+            st.warning("All ranks are out of visible range.")
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+#  SITEMAP AUDITOR
+# ──────────────────────────────────────────────────────────────────────────────
+
+def render_sitemap_scanner(name: str, url: str):
+    _page_header(f"🔗  {get_uni_short(name).upper()} SITEMAP AUDITOR",
+                 "DOMAIN-LEVEL CRAWL COVERAGE · XML ARCHITECTURE TELEMETRY")
+                 
+    _md("""
+    <div style="background:rgba(10,22,40,0.45);border:1px solid rgba(0,212,255,0.12);
+    border-radius:8px;padding:1.1rem;margin-bottom:1.5rem;line-height:1.6;font-size:0.82rem;color:#7a9bb5;">
+        Specify the XML sitemap index or sitemap file URL to inspect structural indexes, last modifications, and check canonical/SSL routing health across all listed pages.
+    </div>
+    """)
+    
+    # Calculate default sitemap URL
+    default_sitemap = url.rstrip("/") + "/sitemap.xml" if url else "https://sabsu.edu.pk/sitemap.xml"
+    
+    col_input, col_btn = st.columns([3, 1])
+    with col_input:
+        sitemap_url = st.text_input("Sitemap XML URL", value=default_sitemap, label_visibility="collapsed")
+    with col_btn:
+        run_scan = st.button("🔎  RUN SITEMAP SCAN", use_container_width=True)
+        
+    if run_scan:
+        if not sitemap_url.strip():
+            st.error("Please enter a valid sitemap URL.")
+            return
+            
+        prog = st.progress(0, text="📡  Requesting sitemap file...")
+        try:
+            headers = {"User-Agent": "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html) SentinelBot/1.0"}
+            r = requests.get(sitemap_url.strip(), headers=headers, timeout=8, verify=False)
+            prog.progress(35, text="📦  Parsing XML sitemap payload...")
+            
+            if r.status_code != 200:
+                st.error(f"⛔  HTTP Fail: Server returned status code {r.status_code}")
+                return
+                
+            soup = BeautifulSoup(r.text, "xml")
+            urls = soup.find_all("url")
+            sitemaps = soup.find_all("sitemap")
+            
+            prog.progress(70, text="🧬  Analyzing sitemap hierarchy...")
+            
+            if sitemaps:
+                # Sitemap Index File
+                st.info(f"📁  **Detected Sitemap Index File** containing {len(sitemaps)} nested sitemaps.")
+                index_data = []
+                for s in sitemaps:
+                    loc = s.find("loc")
+                    lastmod = s.find("lastmod")
+                    index_data.append({
+                        "Nested Sitemap URL": loc.get_text() if loc else "N/A",
+                        "Last Modified": lastmod.get_text() if lastmod else "N/A"
+                    })
+                st.dataframe(pd.DataFrame(index_data), use_container_width=True)
+                
+            elif urls:
+                # Standard Sitemap
+                prog.progress(100, text="✦  Analysis complete.")
+                time.sleep(0.4)
+                prog.empty()
+                
+                st.success(f"✦  **Standard XML Sitemap Scanner Complete.** Found **{len(urls)}** URLs registered.")
+                
+                url_data = []
+                https_count = 0
+                domain_mismatch = 0
+                base_domain = urlparse(url).netloc if url else ""
+                
+                for u in urls:
+                    loc = u.find("loc")
+                    loc_text = loc.get_text().strip() if loc else ""
+                    lastmod = u.find("lastmod")
+                    changefreq = u.find("changefreq")
+                    priority = u.find("priority")
+                    
+                    if loc_text.startswith("https://"):
+                        https_count += 1
+                    if base_domain and urlparse(loc_text).netloc != base_domain:
+                        domain_mismatch += 1
+                        
+                    url_data.append({
+                        "Page URL": loc_text,
+                        "Last Modified": lastmod.get_text() if lastmod else "—",
+                        "Change Freq": changefreq.get_text() if changefreq else "—",
+                        "Priority": priority.get_text() if priority else "—"
+                    })
+                    
+                df_urls = pd.DataFrame(url_data)
+                
+                # KPIs Columns
+                k1, k2, k3 = st.columns(3)
+                k1.metric("TOTAL CRAWLABLE PAGES", f"{len(urls)}")
+                k2.metric("SSL SECURE (HTTPS)", f"{https_count}", f"{len(urls) - https_count} insecure")
+                k3.metric("DOMAIN CONSISTENCY", "100%" if domain_mismatch == 0 else f"{round((1 - domain_mismatch/len(urls))*100)}%", f"{domain_mismatch} external domain links")
+                
+                st.markdown("<br>", unsafe_allow_html=True)
+                _section_header("SITEMAP PAGES DATABASE")
+                st.dataframe(df_urls, use_container_width=True, hide_index=True)
+                
+            else:
+                st.warning("⚠️  The file loaded successfully, but it does not appear to contain standard sitemap XML tags (<url> or <sitemap>).")
+                
+        except Exception as e:
+            st.error(f"⛔  Could not fetch sitemap: {e}")
+
 
 # ──────────────────────────────────────────────────────────────────────────────
 #  PAGE 2: SABS DEEP AUDIT
@@ -1551,6 +1931,250 @@ def render_prescription_engine(d: dict, name: str = "SABS University"):
                 _md(f'<div style="font-family:\'Share Tech Mono\',monospace;font-size:0.72rem;color:#3d5a73;">No items in this category.</div>')
 
 
+# ──────────────────────────────────────────────────────────────────────────────
+#  PAGE 4: AI AGENT ASSISTANT
+# ──────────────────────────────────────────────────────────────────────────────
+
+def render_ai_agent(all_data: dict, url_map: dict):
+    _page_header("🤖  SENTINEL AI CO-PILOT", "AUTONOMOUS SEO AGENT · META REWRITING · DEVELOPER TICKET GENERATION")
+    
+    _md("""
+    <div style="background:rgba(10,22,40,0.45);border:1px solid rgba(0,212,255,0.12);
+    border-radius:8px;padding:1.1rem;margin-bottom:1.5rem;line-height:1.6;font-size:0.82rem;color:#7a9bb5;">
+        Deploy an autonomous AI agent to analyze competitive metrics, draft engineering tickets for site changes, optimize meta tags, or answer custom SEO strategy questions using Gemini 1.5 Flash.
+    </div>
+    """)
+    
+    # Select target university
+    target_uni = st.selectbox("Select Target University to Analyze", list(url_map.keys()))
+    target_data = all_data.get(target_uni, {})
+    
+    if not target_data:
+        st.warning(f"No crawl data available for {target_uni}.")
+        return
+        
+    # Inputs
+    col_key, col_preset = st.columns([1, 1])
+    with col_key:
+        api_key = st.text_input("Gemini API Key (Optional)", type="password", 
+                               help="Get a free key from Google AI Studio", 
+                               value=st.session_state.get("gemini_api_key", ""))
+        if api_key:
+            st.session_state["gemini_api_key"] = api_key
+            
+        st.markdown(
+            '<div style="font-size:0.75rem;margin-top:-0.5rem;color:#7a9bb5;">'
+            'Don\'t have a key? Get one at <a href="https://aistudio.google.com/" target="_blank" style="color:#00d4ff;">Google AI Studio</a>. '
+            'Leave empty to run in <b>Simulation Mode</b>.'
+            '</div>', 
+            unsafe_allow_html=True
+        )
+        
+    with col_preset:
+        preset = st.selectbox("Select Preset Agent Task", [
+            "Draft engineering tickets (Jira/GitHub) for audit fixes",
+            "Rewrite Meta Title and Description for target keywords",
+            "Draft executive strategy summary comparing SABS and competitors",
+            "Custom query / ask the agent anything"
+        ])
+        
+    # Extra fields based on preset
+    keywords = ""
+    custom_prompt = ""
+    if preset == "Rewrite Meta Title and Description for target keywords":
+        keywords = st.text_input("Enter target keywords (separated by commas)", "art school karachi, fine arts admissions SABS")
+    elif preset == "Custom query / ask the agent anything":
+        custom_prompt = st.text_area("Your Custom Instruction / Query", "Analyze SABS's biggest weakness compared to NCA Lahore and suggest a plan.")
+        
+    st.markdown("<br>", unsafe_allow_html=True)
+    dispatch = st.button("⚡  DISPATCH SENTINEL AGENT", use_container_width=True)
+    
+    if dispatch:
+        # Construct prompt
+        if preset == "Draft engineering tickets (Jira/GitHub) for audit fixes":
+            prompt = f"""
+Analyze the following SEO telemetry data for {target_uni} and draft professional engineering tickets (e.g. Jira/GitHub Issues) to resolve the identified technical issues.
+For each ticket, include:
+- Title
+- Description / Problem Statement (using actual data)
+- Technical Resolution steps
+- Priority (High/Medium/Low)
+- Acceptance Criteria
+
+SEO Telemetry Data for {target_uni}:
+{json.dumps(target_data, indent=2)}
+"""
+        elif preset == "Rewrite Meta Title and Description for target keywords":
+            prompt = f"""
+Optimize the homepage meta title and description tags for {target_uni}.
+Current Title: "{target_data.get('title', '')}" (Length: {target_data.get('title_len', 0)})
+Current Description: "{target_data.get('description', '')}" (Length: {target_data.get('desc_len', 0)})
+Target Keywords: {keywords}
+
+Provide:
+1. 3 alternative options for optimized Title tags (must be between 50-60 characters, with character count shown).
+2. 3 alternative options for optimized Meta Descriptions (must be between 150-160 characters, with character count shown).
+3. Search engine result page (SERP) snippet preview of the recommended combination.
+4. Rationale for why these optimizations will improve click-through-rate (CTR) and rankings for the targeted keywords.
+"""
+        elif preset == "Draft executive strategy summary comparing SABS and competitors":
+            competitor_names = [name for name in all_data.keys() if name != target_uni]
+            clean_comparison_data = {k: {
+                "global_score": v.get("global_score", 0),
+                "ttfb_ms": v.get("ttfb_ms", 0),
+                "word_count": v.get("word_count", 0),
+                "missing_alt_count": v.get("missing_alt_count", 0),
+                "title": v.get("title", ""),
+                "description": v.get("description", ""),
+                "h1_count": v.get("h1_count", 0)
+            } for k, v in all_data.items()}
+            
+            prompt = f"""
+Write an executive SEO strategy report comparing {target_uni} to its competitors: {", ".join(competitor_names)}.
+Analyze who is winning the digital dominance war, what SABS's strengths and weaknesses are based on the crawling stats, and what strategic actions SABS must take to capture search market share.
+
+Roster Data:
+{json.dumps(clean_comparison_data, indent=2)}
+"""
+        else: # Custom query
+            prompt = f"""
+The user has asked the following question about {target_uni}'s digital performance:
+"{custom_prompt}"
+
+Here is the crawled SEO telemetry data for {target_uni}:
+{json.dumps(target_data, indent=2)}
+
+Please answer their query comprehensively using the telemetry data above.
+"""
+            
+        if api_key.strip():
+            # Live API Mode
+            try:
+                import google.generativeai as genai
+                genai.configure(api_key=api_key.strip())
+                model = genai.GenerativeModel('gemini-1.5-flash')
+                
+                with st.spinner("🤖 Dispatching agent to analyze telemetry... Please wait."):
+                    response = model.generate_content(prompt)
+                    st.success("✦ Sentinel Agent dispatch successful!")
+                    st.markdown(response.text)
+            except Exception as ex:
+                st.error(f"⛔ Gemini API Error: {ex}")
+                st.info("Check your API key and network connection, or clear the key to run in Simulation Mode.")
+        else:
+            # Simulation/Fallback Mode
+            with st.spinner("🤖 Simulating Sentinel Agent analysis... Please wait."):
+                time.sleep(1.0)
+                
+            st.success("✦ Sentinel Agent simulation complete!")
+            
+            if preset == "Draft engineering tickets (Jira/GitHub) for audit fixes":
+                h1_status = "Missing" if target_data.get("h1_count", 0) == 0 else f"{target_data.get('h1_count')} detected"
+                ttfb = target_data.get("ttfb_ms", 0)
+                missing_alt = target_data.get("missing_alt_count", 0)
+                total_img = target_data.get("total_images", 0)
+                
+                sim_output = f"""
+### 🛠️ [SIMULATION MODE] GENERATED ENGINEERING TICKETS FOR {target_uni.upper()}
+
+#### **TICKET-01: Fix Missing/Incorrect Heading Hierarchy**
+* **Priority:** 🔴 Critical
+* **Title:** Resolve Heading Outline Violations on Homepage
+* **Problem Statement:** Homepage currently reports **{h1_status} H1 tags**. Search engines require exactly one H1 tag on the homepage to establish the primary context of the page.
+* **Resolution Steps:**
+  1. Audit existing headers (`<h1>`, `<h2>`, `<h3>`).
+  2. Ensure there is exactly one `<h1>` wrapping the main brand name or primary value proposition (e.g. `<h1>SABS University of Art, Design and Heritages</h1>`).
+  3. Demote any secondary headings to `<h2>` or `<h3>` as appropriate.
+* **Acceptance Criteria:** Exactly 1 `<h1>` element detected in the DOM.
+
+#### **TICKET-02: Fix WCAG Accessibility Alt-Text Violations**
+* **Priority:** 🟡 High
+* **Title:** Implement Alt-Text for Images on Homepage
+* **Problem Statement:** Found **{missing_alt} out of {total_img} images** missing `alt` description attributes on the homepage, violating WCAG 2.1 Level A compliance and hurting Google Image Search optimization.
+* **Resolution Steps:**
+  1. Locate all `<img>` tags missing the `alt` attribute.
+  2. Implement descriptive, keyword-rich `alt` text for each image.
+  3. Ensure decorative images have an empty `alt=""` attribute so they are skipped by screen readers.
+* **Acceptance Criteria:** `st.metric("IMAGES MISSING ALT")` returns 0 on re-crawl.
+
+#### **TICKET-03: Optimize Server Response Time (TTFB)**
+* **Priority:** 🟡 High
+* **Title:** Improve Server Configuration to Reduce TTFB to <200ms
+* **Problem Statement:** Homepage Time-to-First-Byte (TTFB) is currently clocked at **{ttfb} ms**. Google Core Web Vitals recommend a TTFB of less than 200ms for optimal user experience and ranking signals.
+* **Resolution Steps:**
+  1. Implement server-side caching or page caching for the homepage.
+  2. Optimize database query execution times.
+  3. Use a Content Delivery Network (CDN) to serve static assets.
+* **Acceptance Criteria:** Server response time (TTFB) consistently below 300ms.
+"""
+            elif preset == "Rewrite Meta Title and Description for target keywords":
+                keywords_val = keywords if keywords else "art school karachi, fine arts admissions SABS"
+                sim_output = f"""
+### ✍️ [SIMULATION MODE] OPTIMIZED META DATA FOR {target_uni.upper()}
+
+**Target Keywords:** *{keywords_val}*
+
+---
+
+#### **Title Options (Target: 50–60 characters)**
+1. `SABS University Admissions | Leading Art & Design School Karachi` (60 ch) — **[RECOMMENDED]**
+2. `Fine Arts & Design Programs | SABS University Karachi` (53 ch)
+3. `Study Fine Arts, Design & Heritage | SABS University Pakistan` (58 ch)
+
+#### **Meta Description Options (Target: 150–160 characters)**
+1. `Apply to SABS University, Pakistan's premier art school in Karachi. Explore world-class programs in Fine Arts, Communication Design, and Heritage. Register today.` (160 ch) — **[RECOMMENDED]**
+2. `Discover SABS University Karachi. Offering professional degrees in Fine Arts and Design. Learn from top faculty in a creative, inspiring environment. Apply now.` (154 ch)
+3. `Unlock your creative potential at SABS University. Study Fine Arts, Textile Design, and Architecture. View our admissions criteria, fee structure, and apply.` (156 ch)
+
+#### **🔍 Google SERP Snippet Preview**
+<div style="background-color:#ffffff; color:#1a0dab; font-family:arial,sans-serif; padding:15px; border-radius:8px; border:1px solid #dadce0; max-width:600px; margin:10px 0;">
+    <h3 style="margin:0; font-size:20px; font-weight:normal; line-height:1.3; color:#1a0dab;">SABS University Admissions | Leading Art & Design School Karachi</h3>
+    <div style="color:#006621; font-size:14px; line-height:1.3; margin-top:2px;">https://sabsu.edu.pk</div>
+    <div style="color:#545454; font-size:14px; line-height:1.4; margin-top:4px;">Apply to SABS University, Pakistan's premier art school in Karachi. Explore world-class programs in Fine Arts, Communication Design, and Heritage. Register today.</div>
+</div>
+"""
+            elif preset == "Draft executive strategy summary comparing SABS and competitors":
+                sim_output = f"""
+### 📊 [SIMULATION MODE] EXECUTIVE COMPETITIVE SEO STRATEGY REPORT
+
+#### **1. Digital League Summary**
+* **Protagonist:** {target_uni} (Global Score: **{target_data.get('global_score', 0)}/100**)
+* **Competitors:**
+"""
+                for name, comp_data in all_data.items():
+                    if name != target_uni:
+                        sim_output += f"  - **{name}:** Global Score: **{comp_data.get('global_score', 0)}/100** (TTFB: {comp_data.get('ttfb_ms', 0)}ms)\n"
+                        
+                sim_output += f"""
+#### **2. SWOT Analysis for {target_uni}**
+* **Strengths:** Structured DOM outlines (if headings are correct), standard SSL implementation.
+* **Weaknesses:** Sub-optimal page speed (TTFB: **{target_data.get('ttfb_ms', 0)}ms**), missing alt text on images (**{target_data.get('missing_alt_count', 0)}** missing attributes), and lack of JSON-LD Schema markup.
+* **Opportunities:** Capture search share-of-voice (SOV) for keywords like *'Best Fine Arts Degree Karachi'* by implementing localized Schema markup and resolving basic homepage meta discrepancies.
+* **Threats:** Competitors with faster response times and higher domain authority (like NCA Lahore) ranking higher on high-volume queries due to superior SEO health signals.
+
+#### **3. Roadmap to Digital Dominance**
+1. **Tech SEO Foundation (Days 1–7):** Add JSON-LD LocalBusiness or College schema markup to homepage to help Google map coordinates, contact details, and courses.
+2. **On-Page Optimization (Days 8–14):** Rewrite and deploy the recommended Meta Title and Description. Resolve the homepage heading tag counts.
+3. **Core Web Vitals & Image Optimization (Days 15–30):** Compress and add alt descriptions to all homepage image assets. Implement aggressive server-side caching.
+"""
+            else: # Custom query
+                sim_output = f"""
+### 💬 [SIMULATION MODE] CUSTOM QUERY RESPONSE FOR {target_uni.upper()}
+
+**Your Query:** *"{custom_prompt}"*
+
+**Agent Analysis:**
+Because you are running in Simulation Mode, the Gemini API was not invoked. However, checking our local telemetry databases for **{target_uni}**, here is the relevant analysis:
+- **Global Score:** {target_data.get('global_score', 0)}/100 (SEO Category Scores: {json.dumps(target_data.get('scores', {}))})
+- **TTFB Performance:** {target_data.get('ttfb_ms', 0)} ms
+- **Structural Quality:** {target_data.get('h1_count', 0)} H1 tag(s), {target_data.get('h2_count', 0)} H2 tag(s), and {target_data.get('h3_count', 0)} H3 tag(s).
+- **Accessibility:** {target_data.get('missing_alt_count', 0)} images out of {target_data.get('total_images', 0)} are missing alternative text descriptions.
+
+*Tip: Add a valid Gemini API Key above to unlock custom free-form conversation and deeper analytical synthesis.*
+"""
+            st.markdown(sim_output)
+
+
 # ==============================================================================
 #  SECTION 10: MAIN ROUTER
 # ==============================================================================
@@ -1563,24 +2187,35 @@ sabs_data = (all_data or {}).get(sabs_name, None)
 if all_data is None:
     render_launcher_ui()
 else:
-    # Header with a small expander to adjust settings
-    _md(f"""
-    <div style="display:flex;justify-content:space-between;align-items:center;padding:0.5rem 0 1rem 0;border-bottom:1px solid rgba(0,212,255,0.15);margin-bottom:1.5rem;">
-        <div>
+    # Header with a small expander to adjust settings and download report
+    col_hdr_a, col_hdr_b = st.columns([3, 1])
+    with col_hdr_a:
+        _md(f"""
+        <div style="padding-top:0.4rem;">
             <span style="font-family:'Orbitron',monospace;font-size:1.8rem;font-weight:900;color:#00d4ff;text-shadow:0 0 10px rgba(0,212,255,0.5);letter-spacing:0.12em;">⚔ SENTINEL</span>
             <span style="font-family:'Share Tech Mono',monospace;font-size:0.75rem;color:#3d5a73;margin-left:1rem;letter-spacing:0.15em;">v1.0 SCAN COMPLETE — PRIMARY TARGET: {sabs_name.upper()}</span>
         </div>
-    </div>
-    """)
+        """)
+    with col_hdr_b:
+        pdf_bytes = generate_pdf_report(all_data, url_map)
+        st.download_button(
+            label="💾  DOWNLOAD PDF REPORT",
+            data=pdf_bytes,
+            file_name=f"sentinel_seo_report_{sabs_name.lower().replace(' ', '_')}.pdf",
+            mime="application/pdf",
+            use_container_width=True
+        )
+    st.markdown("<div style='border-bottom:1px solid rgba(0,212,255,0.15);margin-bottom:1.5rem;margin-top:0.5rem;'></div>", unsafe_allow_html=True)
 
     with st.expander("🛠️ ADJUST TARGETS & RE-SCAN", expanded=False):
         render_launcher_ui(is_re_run=True)
 
     # Main navigation tabs
-    tab_war_room, tab_deep_audit, tab_prescription = st.tabs([
+    tab_war_room, tab_deep_audit, tab_prescription, tab_ai_agent = st.tabs([
         "⚔️  THE WAR ROOM",
         f"🔬  {get_uni_short(sabs_name).upper()} DEEP AUDIT",
-        "💊  PRESCRIPTION ENGINE"
+        "💊  PRESCRIPTION ENGINE",
+        "🤖  AI AGENT ASSISTANT"
     ])
 
     with tab_war_room:
@@ -1592,7 +2227,11 @@ else:
         elif "error" in sabs_data:
             st.error(f"⛔  Could not reach {sabs_name}: {sabs_data['error']}")
         else:
-            render_deep_audit(sabs_data, sabs_name)
+            sub_tab_audit, sub_tab_sitemap = st.tabs(["📄 PAGE-LEVEL DIAGNOSTICS", "🔗 SITEMAP.XML DEPTH SCANNER"])
+            with sub_tab_audit:
+                render_deep_audit(sabs_data, sabs_name)
+            with sub_tab_sitemap:
+                render_sitemap_scanner(sabs_name, url_map.get(sabs_name, ""))
 
     with tab_prescription:
         if sabs_data is None:
@@ -1601,3 +2240,6 @@ else:
             st.error(f"⛔  Could not reach {sabs_name}: {sabs_data['error']}")
         else:
             render_prescription_engine(sabs_data, sabs_name)
+
+    with tab_ai_agent:
+        render_ai_agent(all_data, url_map)
