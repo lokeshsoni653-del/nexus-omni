@@ -79,10 +79,10 @@ st.set_page_config(
 # in Pakistan. Benchmarking against direct competitors reveals where SABS
 # gains or loses organic market share in search results.
 UNIVERSITIES = {
-    "SABS University":    "https://www.sabs.edu.pk",
-    "NCA Lahore":         "https://www.nca.edu.pk",
-    "Indus Valley (IVS)": "https://www.ivs.edu.pk",
-    "Beaconhouse (BNU)":  "https://www.bnu.edu.pk",
+    "SABS University":    "https://sabsu.edu.pk",
+    "NCA Lahore":         "https://nca.edu.pk",
+    "Indus Valley (IVS)": "https://ivs.edu.pk",
+    "Beaconhouse (BNU)":  "https://bnu.edu.pk",
 }
 
 # Each university gets a distinct neon color for all charts
@@ -399,14 +399,16 @@ def _scrape_url(url: str) -> dict:
     # ── Readability ───────────────────────────────────────────────────────────
     # SEO RATIONALE: Flesch-Kincaid (target 60-70) correlates with lower
     # bounce rates — a key behavioural signal in Google's ranking algorithm.
+    result["fk_reading_ease"] = None
+    result["fk_grade_level"]  = None
+    result["gunning_fog"]     = None
     if result["word_count"] > 30:
-        result["fk_reading_ease"] = round(textstat.flesch_reading_ease(raw), 1)
-        result["fk_grade_level"]  = round(textstat.flesch_kincaid_grade(raw), 1)
-        result["gunning_fog"]     = round(textstat.gunning_fog(raw), 1)
-    else:
-        result["fk_reading_ease"] = None
-        result["fk_grade_level"]  = None
-        result["gunning_fog"]     = None
+        try:
+            result["fk_reading_ease"] = round(textstat.flesch_reading_ease(raw), 1)
+            result["fk_grade_level"]  = round(textstat.flesch_kincaid_grade(raw), 1)
+            result["gunning_fog"]     = round(textstat.gunning_fog(raw), 1)
+        except Exception:
+            pass
 
     # ── Sentiment ─────────────────────────────────────────────────────────────
     try:
