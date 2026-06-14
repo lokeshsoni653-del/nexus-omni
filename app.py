@@ -1985,19 +1985,34 @@ def render_ai_agent(all_data: dict, url_map: dict):
     # Inputs
     col_key, col_preset = st.columns([1, 1])
     with col_key:
-        api_key = st.text_input("Gemini API Key (Optional)", type="password", 
+        import os
+        # Resolve system API key from secrets or env
+        system_key = ""
+        try:
+            system_key = st.secrets.get("GEMINI_API_KEY", "")
+        except Exception:
+            pass
+        if not system_key:
+            system_key = os.environ.get("GEMINI_API_KEY", "")
+
+        user_key = st.text_input("Gemini API Key (Optional)", type="password", 
                                help="Get a free key from Google AI Studio", 
                                value=st.session_state.get("gemini_api_key", ""))
-        if api_key:
-            st.session_state["gemini_api_key"] = api_key
+        if user_key:
+            st.session_state["gemini_api_key"] = user_key
             
-        st.markdown(
-            '<div style="font-size:0.75rem;margin-top:-0.5rem;color:#7a9bb5;">'
-            'Don\'t have a key? Get one at <a href="https://aistudio.google.com/" target="_blank" style="color:#00d4ff;">Google AI Studio</a>. '
-            'Leave empty to run in <b>Simulation Mode</b>.'
-            '</div>', 
-            unsafe_allow_html=True
-        )
+        if user_key:
+            st.markdown('<div style="font-size:0.75rem;margin-top:-0.5rem;color:#00ff88;">🔑 Custom API Key Active</div>', unsafe_allow_html=True)
+        elif system_key:
+            st.markdown('<div style="font-size:0.75rem;margin-top:-0.5rem;color:#00ff88;">🔑 System API Key Active (Securely configured in secrets)</div>', unsafe_allow_html=True)
+        else:
+            st.markdown(
+                '<div style="font-size:0.75rem;margin-top:-0.5rem;color:#7a9bb5;">'
+                'Don\'t have a key? Get one at <a href="https://aistudio.google.com/" target="_blank" style="color:#00d4ff;">Google AI Studio</a>. '
+                'Leave empty to run in <b>Simulation Mode</b>.'
+                '</div>', 
+                unsafe_allow_html=True
+            )
         
     with col_preset:
         preset = st.selectbox("Select Preset Agent Task", [
@@ -2078,11 +2093,12 @@ Here is the crawled SEO telemetry data for {target_uni}:
 Please answer their query comprehensively using the telemetry data above.
 """
             
-        if api_key.strip():
+        active_key = user_key.strip() if user_key.strip() else system_key.strip()
+        if active_key:
             # Live API Mode
             try:
                 import google.generativeai as genai
-                genai.configure(api_key=api_key.strip())
+                genai.configure(api_key=active_key)
                 model = genai.GenerativeModel('gemini-1.5-flash')
                 
                 with st.spinner("🤖 Dispatching agent to analyze telemetry... Please wait."):
