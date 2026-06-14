@@ -159,16 +159,22 @@ html, body, [data-testid="stAppViewContainer"], [data-testid="stApp"] {
     background: linear-gradient(180deg,#030810 0%,#050e1a 100%) !important;
     border-right: 1px solid var(--border-neon) !important;
     box-shadow: 4px 0 30px rgba(0,212,255,0.06) !important;
-    transform: translate3d(0px, 0px, 0px) !important;
-    left: 0 !important;
-    width: 21rem !important;
-    visibility: visible !important;
-}
-[data-testid="stAppViewContainer"] {
-    padding-left: 21rem !important;
 }
 [data-testid="collapsedControl"] {
-    display: none !important;
+    background: rgba(3,8,16,0.85) !important;
+    border: 1px solid var(--border-neon) !important;
+    box-shadow: var(--glow-cyan) !important;
+    border-radius: 8px !important;
+    left: 15px !important;
+    top: 15px !important;
+    z-index: 999999 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 4px !important;
+}
+[data-testid="collapsedControl"] button {
+    color: var(--accent-cyan) !important;
 }
 [data-testid="stSidebar"] * { color: var(--text-primary) !important; }
 [data-testid="stSidebar"] .stTextInput > div > div > input {
