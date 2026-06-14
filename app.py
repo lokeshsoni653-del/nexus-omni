@@ -2247,6 +2247,126 @@ Because you are running in Simulation Mode, the Gemini API was not invoked. Howe
             st.markdown(sim_output)
 
 
+# ──────────────────────────────────────────────────────────────────────────────
+#  PAGE 5: SEO DEVELOPER TOOLS
+# ──────────────────────────────────────────────────────────────────────────────
+
+def render_developer_tools(name: str, d: dict):
+    _page_header("🛠️  SEO DEVELOPER TOOLS", "RICH SCHEMA GENERATOR · GOOGLE SERP SIMULATOR")
+    
+    _md("""
+    <div style="background:rgba(10,22,40,0.45);border:1px solid rgba(0,212,255,0.12);
+    border-radius:8px;padding:1.1rem;margin-bottom:1.5rem;line-height:1.6;font-size:0.82rem;color:#7a9bb5;">
+        Generate search-engine-ready JSON-LD schema markup or simulate Google search snippet visibility and CTR projections for optimization keywords.
+    </div>
+    """)
+    
+    tool_choice = st.radio("Select Developer Tool", 
+                           ["📝 JSON-LD SCHEMA GENERATOR", "🔍 GOOGLE SERP SIMULATOR"], 
+                           horizontal=True, label_visibility="collapsed")
+    
+    st.markdown("<br>", unsafe_allow_html=True)
+    
+    if tool_choice == "📝 JSON-LD SCHEMA GENERATOR":
+        st.markdown("<h3 style='font-family:Share Tech Mono;font-size:1.1rem;color:#00d4ff;'>📝 COLLEGE SCHEMA GENERATOR</h3>", unsafe_allow_html=True)
+        
+        col_f1, col_f2 = st.columns(2)
+        with col_f1:
+            inst_name = st.text_input("Institution Name", value=name)
+            phone = st.text_input("Telephone / Contact", value="+92 22 211535")
+            city = st.text_input("City", value="Jamshoro")
+            street = st.text_input("Street Address", value="SABS University, Jamshoro Road")
+        with col_f2:
+            post_code = st.text_input("Postal Code", value="76060")
+            founded = st.text_input("Founding Year", value="1972")
+            courses = st.multiselect("Select Core Degrees Offered", 
+                                     ["Fine Arts", "Communication Design", "Textile Design", "Ceramics", "Architecture"],
+                                     default=["Fine Arts", "Communication Design", "Textile Design"])
+            socials = st.text_input("Social Media Handles (comma separated)", "facebook.com/sabsu, instagram.com/sabs")
+            
+        # Build JSON-LD Dict
+        schema_dict = {
+            "@context": "https://schema.org",
+            "@type": "College",
+            "name": inst_name,
+            "telephone": phone,
+            "address": {
+                "@type": "PostalAddress",
+                "streetAddress": street,
+                "addressLocality": city,
+                "postalCode": post_code,
+                "addressCountry": "PK"
+            },
+            "foundingDate": founded,
+            "hasCredential": [
+                {
+                    "@type": "EducationalOccupationalCredential",
+                    "name": f"Bachelor of {course}"
+                } for course in courses
+            ],
+            "sameAs": [s.strip() for s in socials.split(",") if s.strip()]
+        }
+        
+        schema_json = json.dumps(schema_dict, indent=2)
+        
+        st.markdown("<br>", unsafe_allow_html=True)
+        _section_header("GENERATED JSON-LD SCHEMA CODE")
+        st.code(schema_json, language="json")
+        
+        st.info("💡 COPY CODE & INJECT: Copy the generated script block above and insert it inside the `<head>` of your website homepage to enrich SABS Search rankings.")
+        
+    else: # GOOGLE SERP SIMULATOR
+        st.markdown("<h3 style='font-family:Share Tech Mono;font-size:1.1rem;color:#00d4ff;'>🔍 GOOGLE SERP SIMULATOR</h3>", unsafe_allow_html=True)
+        
+        col_s1, col_s2 = st.columns([1, 1])
+        with col_s1:
+            query = st.text_input("Target Search Query", value="Best Art School Karachi")
+            sim_rank = st.slider("Simulated Google Rank Position", 1, 10, value=3)
+            sim_title = st.text_input("Optimized Search Title", value=d.get("title", "SABS University of Art and Design")[:60])
+            sim_desc = st.text_area("Optimized Meta Description", value=d.get("description", "Apply to SABS University, Pakistan's premier art school.")[:155])
+        
+        # Calculate CTR based on rank
+        def get_ctr_val(rank: int) -> float:
+            if rank == 1: return 30.2
+            if rank == 2: return 15.1
+            if rank == 3: return 10.4
+            if rank == 4: return 6.2
+            if rank == 5: return 4.3
+            if rank == 6: return 3.1
+            if rank == 7: return 2.3
+            if rank == 8: return 1.7
+            if rank == 9: return 1.3
+            return 1.0
+            
+        ctr = get_ctr_val(sim_rank)
+        
+        with col_s2:
+            st.markdown("<div style='font-family:Share Tech Mono;font-size:0.8rem;color:#00d4ff;margin-bottom:0.6rem;text-transform:uppercase;'>■ Google SERP Snippet Preview</div>", unsafe_allow_html=True)
+            
+            # Google styled card (classic light theme to resemble actual Google Search)
+            st.markdown(f"""
+            <div style="background-color:#ffffff; color:#1a0dab; font-family:arial,sans-serif; padding:15px; border-radius:8px; border:1px solid #dadce0; max-width:600px; margin-bottom:1rem;">
+                <div style="color:#202124; font-size:12px; line-height:1.3; margin-bottom:2px;">
+                    Google Search Result • Position #{sim_rank}
+                </div>
+                <h3 style="margin:0; font-size:20px; font-weight:normal; line-height:1.3; color:#1a0dab;">
+                    <a href="#" style="color:#1a0dab; text-decoration:none;">{sim_title}</a>
+                </h3>
+                <div style="color:#006621; font-size:14px; line-height:1.3; margin-top:2px;">
+                    https://sabsu.edu.pk <span style="color:#70757a; font-size:12px;">▼</span>
+                </div>
+                <div style="color:#545454; font-size:14px; line-height:1.4; margin-top:4px;">
+                    {sim_desc}
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            # CTR Gauge or indicator
+            st.metric("PROJECTED ORGANIC CLICK-THROUGH RATE (CTR)", f"{ctr}%", f"Position #{sim_rank} average share")
+            
+            st.info("📈 SEO INSIGHT: Adjust SABS rank position slider or rewrite the Meta Title & Description tags to see how to capture search interest and drive traffic.")
+
+
 # ==============================================================================
 #  SECTION 10: MAIN ROUTER
 # ==============================================================================
@@ -2283,11 +2403,12 @@ else:
         render_launcher_ui(is_re_run=True)
 
     # Main navigation tabs
-    tab_war_room, tab_deep_audit, tab_prescription, tab_ai_agent = st.tabs([
+    tab_war_room, tab_deep_audit, tab_prescription, tab_ai_agent, tab_dev_tools = st.tabs([
         "⚔️  THE WAR ROOM",
         f"🔬  {get_uni_short(sabs_name).upper()} DEEP AUDIT",
         "💊  PRESCRIPTION ENGINE",
-        "🤖  AI AGENT ASSISTANT"
+        "🤖  AI AGENT ASSISTANT",
+        "🛠️  SEO DEVELOPER TOOLS"
     ])
 
     with tab_war_room:
@@ -2315,3 +2436,11 @@ else:
 
     with tab_ai_agent:
         render_ai_agent(all_data, url_map)
+
+    with tab_dev_tools:
+        if sabs_data is None:
+            st.warning(f"No {get_uni_short(sabs_name)} data available.")
+        elif "error" in sabs_data:
+            st.error(f"⛔  Could not reach {sabs_name}: {sabs_data['error']}")
+        else:
+            render_developer_tools(sabs_name, sabs_data)
