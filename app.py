@@ -825,6 +825,15 @@ def generate_pdf_report(all_data: dict, url_map: dict) -> bytes:
     except ImportError:
         return b""
 
+    def clean_txt(s: str) -> str:
+        if not s:
+            return ""
+        # Replace common unicode quotes and hyphens with ASCII equivalents
+        s = s.replace("“", '"').replace("”", '"').replace("‘", "'").replace("’", "'")
+        s = s.replace("—", "-").replace("–", "-")
+        # Encode to Latin-1, ignoring unmappable unicode chars (like emojis), and decode
+        return s.encode("latin-1", "ignore").decode("latin-1")
+
     class SentinelPDF(FPDF):
         def header(self):
             # Cyberpunk Sentinel page background/header
@@ -834,7 +843,7 @@ def generate_pdf_report(all_data: dict, url_map: dict) -> bytes:
             # Header text
             self.set_font("Courier", "B", 10)
             self.set_text_color(0, 212, 255) # #00d4ff
-            self.cell(0, 10, "⚔ SENTINEL DIGITAL DOMINANCE REPORT", border=0, ln=1, align="L")
+            self.cell(0, 10, "SENTINEL DIGITAL DOMINANCE REPORT", border=0, ln=1, align="L")
             self.set_draw_color(0, 212, 255)
             self.line(10, 18, 200, 18)
             self.ln(5)
@@ -870,7 +879,7 @@ def generate_pdf_report(all_data: dict, url_map: dict) -> bytes:
     pdf.set_font("Courier", "", 10)
     pdf.set_text_color(232, 244, 248)
     for name, url in url_map.items():
-        pdf.cell(0, 6, f"- {name}: {url}", ln=1)
+        pdf.cell(0, 6, clean_txt(f"- {name}: {url}"), ln=1)
         
     pdf.ln(10)
     
@@ -914,9 +923,9 @@ def generate_pdf_report(all_data: dict, url_map: dict) -> bytes:
     rows.sort(key=lambda x: -x[1])
     for rank, (name, score, ttfb, meta, struct, access, content) in enumerate(rows, 1):
         pdf.cell(15, 6, f"#{rank}", 1, 0, "C")
-        pdf.cell(60, 6, name[:30], 1, 0, "L")
+        pdf.cell(60, 6, clean_txt(name[:30]), 1, 0, "L")
         pdf.cell(20, 6, f"{score}/100", 1, 0, "C")
-        pdf.cell(20, 6, ttfb, 1, 0, "C")
+        pdf.cell(20, 6, clean_txt(ttfb), 1, 0, "C")
         pdf.cell(60, 6, f"{meta}/25 | {struct}/25 | {access}/25 | {content}/25", 1, 1, "C")
         
     pdf.ln(10)
@@ -927,14 +936,14 @@ def generate_pdf_report(all_data: dict, url_map: dict) -> bytes:
     
     pdf.set_font("Courier", "B", 14)
     pdf.set_text_color(0, 212, 255)
-    pdf.cell(0, 8, f"2. DEEP AUDIT: {primary_name.upper()}", ln=1)
+    pdf.cell(0, 8, clean_txt(f"2. DEEP AUDIT: {primary_name.upper()}"), ln=1)
     pdf.line(15, pdf.get_y(), 200, pdf.get_y())
     pdf.ln(5)
     
     if "error" in primary_data:
         pdf.set_font("Courier", "", 10)
         pdf.set_text_color(255, 45, 85)
-        pdf.cell(0, 8, f"Crawl Error: {primary_data['error']}", ln=1)
+        pdf.cell(0, 8, clean_txt(f"Crawl Error: {primary_data['error']}"), ln=1)
     else:
         pdf.set_font("Courier", "B", 10)
         pdf.set_text_color(122, 155, 181)
@@ -947,8 +956,8 @@ def generate_pdf_report(all_data: dict, url_map: dict) -> bytes:
         kpis = [
             ("Global Health Score", f"{primary_data.get('global_score', 0)}/100"),
             ("Response TTFB", f"{primary_data.get('ttfb_ms', 0)} ms"),
-            ("Document Title", primary_data.get("title", "NOT FOUND")[:65]),
-            ("Meta Description", primary_data.get("description", "NOT FOUND")[:65] + ("..." if len(primary_data.get("description", "")) > 65 else "")),
+            ("Document Title", clean_txt(primary_data.get("title", "NOT FOUND")[:65])),
+            ("Meta Description", clean_txt(primary_data.get("description", "NOT FOUND")[:65] + ("..." if len(primary_data.get("description", "")) > 65 else ""))),
             ("Word Count", f"{primary_data.get('word_count', 0):,} words"),
             ("Heading Counts", f"H1: {primary_data.get('h1_count', 0)} | H2: {primary_data.get('h2_count', 0)} | H3: {primary_data.get('h3_count', 0)}"),
             ("Images (Alt Missing)", f"Total: {primary_data.get('total_images', 0)} (Missing: {primary_data.get('missing_alt_count', 0)})"),
@@ -958,8 +967,8 @@ def generate_pdf_report(all_data: dict, url_map: dict) -> bytes:
         ]
         
         for k, v in kpis:
-            pdf.cell(80, 6, k, 1, 0, "L")
-            pdf.cell(100, 6, str(v), 1, 1, "L")
+            pdf.cell(80, 6, clean_txt(k), 1, 0, "L")
+            pdf.cell(100, 6, clean_txt(str(v)), 1, 1, "L")
             
         pdf.ln(10)
         
@@ -989,11 +998,11 @@ def generate_pdf_report(all_data: dict, url_map: dict) -> bytes:
             pdf.set_text_color(232, 244, 248)
             for i, p in enumerate(prescriptions[:15], 1): # limit to top 15 fixes
                 pdf.cell(10, 6, f"#{i}", 1, 0, "C")
-                pdf.cell(85, 6, p["title"][:48], 1, 0, "L")
+                pdf.cell(85, 6, clean_txt(p["title"][:48]), 1, 0, "L")
                 pdf.cell(15, 6, f"{p['impact']}/10", 1, 0, "C")
                 pdf.cell(15, 6, f"{p['effort']}/10", 1, 0, "C")
-                pdf.cell(30, 6, p["category"][-12:], 1, 0, "C")
-                pdf.cell(25, 6, p["fix_time"], 1, 1, "C")
+                pdf.cell(30, 6, clean_txt(p["category"][-12:]), 1, 0, "C")
+                pdf.cell(25, 6, clean_txt(p["fix_time"]), 1, 1, "C")
 
     # Output to bytes
     return bytes(pdf.output())
