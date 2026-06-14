@@ -69,7 +69,7 @@ st.set_page_config(
     page_title="SENTINEL · SABS Digital Intelligence",
     page_icon="⚔",
     layout="wide",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="collapsed",
 )
 
 # ==============================================================================
@@ -766,88 +766,108 @@ def generate_prescriptions(d: dict) -> list:
 
 
 # ==============================================================================
-#  SECTION 7: SIDEBAR
+#  SECTION 7: LAUNCHER PANEL (MAIN PAGE CONTROL CENTER)
 # ==============================================================================
-with st.sidebar:
-    _md("""
-    <div style="text-align:center;padding:0.3rem 0 0.2rem;">
-    <div style="font-family:'Orbitron',monospace;font-size:1.05rem;font-weight:900;
-    color:#00d4ff;text-shadow:0 0 10px rgba(0,212,255,0.7);letter-spacing:0.12em;">⚔ SENTINEL</div>
-    <div style="font-family:'Share Tech Mono',monospace;font-size:0.58rem;color:#1e3a4a;
-    letter-spacing:0.15em;margin-top:0.1rem;">SABS DIGITAL DOMINANCE PLATFORM</div>
-    </div>
-    """)
-    st.markdown("---")
 
-    _md('<div style="font-family:\'Share Tech Mono\',monospace;font-size:0.65rem;color:#3d5a73;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:0.3rem;">▸ Primary Target</div>')
-    sabs_url = st.text_input("SABS URL", value=UNIVERSITIES["SABS University"],
-                              label_visibility="collapsed")
+def render_launcher_ui(is_re_run=False):
+    # Retrieve current session state values if they exist, else default values
+    saved_url_map = st.session_state.get("url_map", {})
+    sabs_val = saved_url_map.get("SABS University", UNIVERSITIES["SABS University"])
+    nca_val  = saved_url_map.get("NCA Lahore",         UNIVERSITIES["NCA Lahore"])
+    ivs_val  = saved_url_map.get("Indus Valley (IVS)", UNIVERSITIES["Indus Valley (IVS)"])
+    bnu_val  = saved_url_map.get("Beaconhouse (BNU)",  UNIVERSITIES["Beaconhouse (BNU)"])
 
-    _md('<div style="font-family:\'Share Tech Mono\',monospace;font-size:0.65rem;color:#3d5a73;letter-spacing:0.12em;text-transform:uppercase;margin-top:0.6rem;margin-bottom:0.3rem;">▸ Competitor Targets</div>')
-    nca_url = st.text_input("NCA",  value=UNIVERSITIES["NCA Lahore"],         label_visibility="collapsed")
-    ivs_url = st.text_input("IVS",  value=UNIVERSITIES["Indus Valley (IVS)"], label_visibility="collapsed")
-    bnu_url = st.text_input("BNU",  value=UNIVERSITIES["Beaconhouse (BNU)"],  label_visibility="collapsed")
-
-    st.markdown("<br>", unsafe_allow_html=True)
-    launch_btn = st.button("⚔  LAUNCH WAR ROOM SCAN", use_container_width=True)
-
-    st.markdown("---")
-    _md('<div style="font-family:\'Share Tech Mono\',monospace;font-size:0.65rem;color:#3d5a73;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:0.4rem;">▸ Navigation</div>')
-    page = st.radio("Nav", options=[
-        "⚔️  THE WAR ROOM",
-        "🔬  SABS DEEP AUDIT",
-        "💊  PRESCRIPTION ENGINE",
-    ], label_visibility="collapsed")
-
-    st.markdown("---")
-    if "all_data" in st.session_state:
-        all_d = st.session_state["all_data"]
-        sabs_d = all_d.get("SABS University", {})
-        if "error" not in sabs_d:
-            _md(f"""
-            <div style="font-family:'Share Tech Mono',monospace;font-size:0.68rem;color:#3d5a73;line-height:1.9;">
-            <span style="color:#00d4ff;">■</span> SABS SCORE: {sabs_d.get('global_score','—')}/100<br>
-            <span style="color:#00d4ff;">■</span> SABS TTFB: {sabs_d.get('ttfb_ms','—')} ms<br>
-            <span style="color:#00d4ff;">■</span> ISSUES: {len(generate_prescriptions(sabs_d))} found<br>
-            <span style="color:#00d4ff;">■</span> STATUS: SCAN COMPLETE
+    if not is_re_run:
+        # Show full giant Cyberpunk-style Hero Header
+        _md("""
+        <div style="text-align:center;padding:1.5rem 0 2rem 0;margin-bottom:1.5rem;border-bottom:1px solid rgba(0,212,255,0.15);">
+            <div style="font-family:'Orbitron',monospace;font-size:3.5rem;font-weight:900;
+            color:#00d4ff;text-shadow:0 0 15px rgba(0,212,255,0.7);letter-spacing:0.18em;margin-bottom:0.5rem;">⚔ SENTINEL</div>
+            <div style="font-family:'Share Tech Mono',monospace;font-size:1.1rem;color:#7a9bb5;
+            letter-spacing:0.25em;">SABS DIGITAL DOMINANCE & TECHNICAL SEO WAR ROOM</div>
+            <div style="font-family:'Share Tech Mono',monospace;font-size:0.75rem;color:#3d5a73;
+            letter-spacing:0.12em;margin-top:0.6rem;text-transform:uppercase;">
+                Competitive Intelligence Probe for Pakistani Art & Design Institutions
             </div>
-            """)
+        </div>
+        """)
+        
+        # Introduction / Rationale Card
+        _md("""
+        <div style="background:rgba(10,22,40,0.45);border:1px solid rgba(0,212,255,0.12);
+        border-radius:8px;padding:1.2rem;margin-bottom:2rem;line-height:1.7;">
+            <div style="font-family:'Orbitron',monospace;font-size:0.85rem;color:#00d4ff;letter-spacing:0.1em;margin-bottom:0.6rem;">⚡ COMMAND BRIEFING</div>
+            <div style="font-family:'Inter',sans-serif;font-size:0.85rem;color:#e8f4f8;">
+                This intelligence platform scrapes, parses, and evaluates the live performance metrics of <b>SABS University</b> against its direct rivals: <b>NCA</b>, <b>Indus Valley (IVS)</b>, and <b>Beaconhouse (BNU)</b>. 
+                By launching the scan, the engine performs parallel HTTP telemetry, parses DOM structures, audits HTML5 landmarks, computes readability scores, and checks meta structures to produce a real-time, prioritised technical prescription matrix.
+            </div>
+        </div>
+        """)
     else:
-        _md('<div style="font-family:\'Share Tech Mono\',monospace;font-size:0.68rem;color:#1e3a4a;">■ AWAITING SCAN LAUNCH</div>')
+        _md("""
+        <div style="font-family:'Orbitron',monospace;font-size:0.95rem;color:#00d4ff;letter-spacing:0.1em;margin-bottom:0.8rem;margin-top:0.5rem;">
+            ⚙️ ADJUST SCAN TARGETS
+        </div>
+        """)
+
+    # Grid of inputs
+    col1, col2 = st.columns(2, gap="medium")
+    
+    with col1:
+        _md('<div style="font-family:\'Share Tech Mono\',monospace;font-size:0.8rem;color:#00d4ff;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:0.4rem;">■ PRIMARY TARGET (THE PROTAGONIST)</div>')
+        sabs_url = st.text_input("SABS University URL", value=sabs_val, label_visibility="collapsed")
+        
+        _md('<div style="font-family:\'Share Tech Mono\',monospace;font-size:0.8rem;color:#f97316;letter-spacing:0.12em;text-transform:uppercase;margin-top:1.2rem;margin-bottom:0.4rem;">■ COMPETITOR TARGET: NCA LAHORE</div>')
+        nca_url = st.text_input("NCA URL", value=nca_val, label_visibility="collapsed")
+        
+    with col2:
+        _md('<div style="font-family:\'Share Tech Mono\',monospace;font-size:0.8rem;color:#a855f7;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:0.4rem;">■ COMPETITOR TARGET: INDUS VALLEY (IVS)</div>')
+        ivs_url = st.text_input("IVS URL", value=ivs_val, label_visibility="collapsed")
+        
+        _md('<div style="font-family:\'Share Tech Mono\',monospace;font-size:0.8rem;color:#22c55e;letter-spacing:0.12em;text-transform:uppercase;margin-top:1.2rem;margin-bottom:0.4rem;">■ COMPETITOR TARGET: BEACONHOUSE (BNU)</div>')
+        bnu_url = st.text_input("BNU URL", value=bnu_val, label_visibility="collapsed")
 
     st.markdown("<br>", unsafe_allow_html=True)
-    _md("""
-    <div style="font-family:'Share Tech Mono',monospace;font-size:0.55rem;color:#1e3a4a;text-align:center;line-height:1.7;">
-    SENTINEL v1.0 · SABS ASSESSMENT 2026<br>PAKISTAN ART SCHOOL INTELLIGENCE
-    </div>
-    """)
+    
+    # Large launching button
+    btn_label = "⚔  RE-LAUNCH COMPETITIVE SCAN" if is_re_run else "⚔  LAUNCH COMPETITIVE SCAN"
+    launch_btn = st.button(btn_label, use_container_width=True)
 
+    if launch_btn:
+        url_map = {
+            "SABS University":    sabs_url.strip(),
+            "NCA Lahore":         nca_url.strip(),
+            "Indus Valley (IVS)": ivs_url.strip(),
+            "Beaconhouse (BNU)":  bnu_url.strip(),
+        }
+        urls_tuple = tuple(url_map.items())
 
-# ==============================================================================
-#  SECTION 8: DATA PIPELINE TRIGGER
-# ==============================================================================
-if launch_btn:
-    url_map = {
-        "SABS University":    sabs_url.strip(),
-        "NCA Lahore":         nca_url.strip(),
-        "Indus Valley (IVS)": ivs_url.strip(),
-        "Beaconhouse (BNU)":  bnu_url.strip(),
-    }
-    urls_tuple = tuple(url_map.items())
+        prog = st.progress(0, text="⚔  Dispatching parallel telemetry probes to 4 universities …")
+        with st.spinner(""):
+            all_data = fetch_all_universities(urls_tuple)
+        prog.progress(100, text="✦  All university scans complete.")
+        time.sleep(0.8)
+        prog.empty()
 
-    prog = st.progress(0, text="⚔  Dispatching parallel telemetry probes to 4 universities …")
-    with st.spinner(""):
-        all_data = fetch_all_universities(urls_tuple)
-    prog.progress(100, text="✦  All university scans complete.")
-    time.sleep(0.8)
-    prog.empty()
+        st.session_state["all_data"] = all_data
+        st.session_state["url_map"]  = url_map
 
-    st.session_state["all_data"] = all_data
-    st.session_state["url_map"]  = url_map
+        errors = [n for n, d in all_data.items() if "error" in d]
+        if errors:
+            st.warning(f"⚠  Could not reach: {', '.join(errors)}. These will show as OFFLINE in comparisons.")
+            
+        # Rerun to switch from Launcher UI to Results tabs
+        st.rerun()
 
-    errors = [n for n, d in all_data.items() if "error" in d]
-    if errors:
-        st.warning(f"⚠  Could not reach: {', '.join(errors)}. These will show as OFFLINE in comparisons.")
+    # Footer inside launcher
+    if not is_re_run:
+        st.markdown("<br><br><br>", unsafe_allow_html=True)
+        _md("""
+        <div style="font-family:'Share Tech Mono',monospace;font-size:0.65rem;color:#1e3a4a;text-align:center;line-height:1.7;">
+        SENTINEL v1.0 · SABS ASSESSMENT 2026 · DEVELOPED BY SOFTWARE ENGINEERING DIVISION<br>
+        PAKISTAN ART SCHOOL INTELLIGENCE SERVICE · ALL PROBES ACTIVE
+        </div>
+        """)
 
 
 # ==============================================================================
@@ -1479,24 +1499,44 @@ def render_prescription_engine(d: dict):
 all_data  = st.session_state.get("all_data",  None)
 sabs_data = (all_data or {}).get("SABS University", None)
 
-if "⚔️" in page:
-    if all_data is None:
-        _no_data()
-    else:
+if all_data is None:
+    render_launcher_ui()
+else:
+    # Header with a small expander to adjust settings
+    _md("""
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:0.5rem 0 1rem 0;border-bottom:1px solid rgba(0,212,255,0.15);margin-bottom:1.5rem;">
+        <div>
+            <span style="font-family:'Orbitron',monospace;font-size:1.8rem;font-weight:900;color:#00d4ff;text-shadow:0 0 10px rgba(0,212,255,0.5);letter-spacing:0.12em;">⚔ SENTINEL</span>
+            <span style="font-family:'Share Tech Mono',monospace;font-size:0.75rem;color:#3d5a73;margin-left:1rem;letter-spacing:0.15em;">v1.0 SCAN COMPLETE</span>
+        </div>
+    </div>
+    """)
+
+    with st.expander("🛠️ ADJUST TARGETS & RE-SCAN", expanded=False):
+        render_launcher_ui(is_re_run=True)
+
+    # Main navigation tabs
+    tab_war_room, tab_deep_audit, tab_prescription = st.tabs([
+        "⚔️  THE WAR ROOM",
+        "🔬  SABS DEEP AUDIT",
+        "💊  PRESCRIPTION ENGINE"
+    ])
+
+    with tab_war_room:
         render_war_room(all_data)
 
-elif "🔬" in page:
-    if sabs_data is None:
-        _no_data()
-    elif "error" in sabs_data:
-        st.error(f"⛔  Could not reach SABS University: {sabs_data['error']}")
-    else:
-        render_deep_audit(sabs_data)
+    with tab_deep_audit:
+        if sabs_data is None:
+            st.warning("No SABS data available.")
+        elif "error" in sabs_data:
+            st.error(f"⛔  Could not reach SABS University: {sabs_data['error']}")
+        else:
+            render_deep_audit(sabs_data)
 
-elif "💊" in page:
-    if sabs_data is None:
-        _no_data()
-    elif "error" in sabs_data:
-        st.error(f"⛔  Could not reach SABS University: {sabs_data['error']}")
-    else:
-        render_prescription_engine(sabs_data)
+    with tab_prescription:
+        if sabs_data is None:
+            st.warning("No SABS data available.")
+        elif "error" in sabs_data:
+            st.error(f"⛔  Could not reach SABS University: {sabs_data['error']}")
+        else:
+            render_prescription_engine(sabs_data)
