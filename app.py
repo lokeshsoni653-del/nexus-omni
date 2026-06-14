@@ -2099,9 +2099,34 @@ Please answer their query comprehensively using the telemetry data above.
             try:
                 import google.generativeai as genai
                 genai.configure(api_key=active_key)
-                model = genai.GenerativeModel('gemini-1.5-flash')
                 
-                with st.spinner("🤖 Dispatching agent to analyze telemetry... Please wait."):
+                # Dynamically resolve available model
+                model_name = "gemini-1.5-flash"
+                try:
+                    available_models = [m.name for m in genai.list_models()]
+                    candidates = [
+                        "models/gemini-1.5-flash",
+                        "models/gemini-1.5-flash-latest",
+                        "models/gemini-pro",
+                        "models/gemini-1.5-pro",
+                        "models/gemini-2.0-flash"
+                    ]
+                    for c in candidates:
+                        if c in available_models:
+                            model_name = c
+                            break
+                    else:
+                        # Fallback to the first model supporting generateContent
+                        for m in genai.list_models():
+                            if "generateContent" in m.supported_generation_methods:
+                                model_name = m.name
+                                break
+                except Exception:
+                    pass
+                
+                model = genai.GenerativeModel(model_name)
+                
+                with st.spinner(f"🤖 Dispatching agent ({model_name.replace('models/', '')}) to analyze telemetry... Please wait."):
                     response = model.generate_content(prompt)
                     st.success("✦ Sentinel Agent dispatch successful!")
                     st.markdown(response.text)
