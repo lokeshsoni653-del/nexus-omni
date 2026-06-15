@@ -242,7 +242,7 @@ STEP 6 — In the sidebar, enter any URL (e.g., https://www.sabs.edu.pk)
   CONTACT / CREDITS
 --------------------------------------------------------------------------------
 
-  Developed by    : Software Engineering Student, SABS University
+  Developed by    : Lokesh Kumar (Software Engineering Student, SABS University)
   Assessment      : SEO & Digital Marketing
   Academic Year   : 2026
   Architecture    : Single-file Streamlit MPA (Multi-Page Application)

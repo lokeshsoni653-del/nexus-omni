@@ -13,7 +13,7 @@
 #  PAGE 2 — DEEP AUDIT       : SABS-specific technical SEO diagnostics
 #  PAGE 3 — PRESCRIPTION ENGINE : Prioritised action plan with impact/effort matrix
 #
-#  Author  : Software Engineering Student, SABS University
+#  Author  : Lokesh Kumar (Software Engineering Student, SABS University)
 #  Version : 1.0.0 — Assessment Build
 # ==============================================================================
 
@@ -1113,7 +1113,7 @@ def render_launcher_ui(is_re_run=False):
         st.markdown("<br><br><br>", unsafe_allow_html=True)
         _md("""
         <div style="font-family:'Share Tech Mono',monospace;font-size:0.65rem;color:#1e3a4a;text-align:center;line-height:1.7;">
-        SENTINEL v1.0 · SABS ASSESSMENT 2026 · DEVELOPED BY SOFTWARE ENGINEERING DIVISION<br>
+        SENTINEL v1.0 · SABS ASSESSMENT 2026 · DEVELOPED BY LOKESH KUMAR (SOFTWARE ENGINEERING DIVISION)<br>
         PAKISTAN ART SCHOOL INTELLIGENCE SERVICE · ALL PROBES ACTIVE
         </div>
         """)
