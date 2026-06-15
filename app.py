@@ -1604,6 +1604,107 @@ def render_sitemap_scanner(name: str, url: str):
 
 
 # ──────────────────────────────────────────────────────────────────────────────
+#  PAGE 2.5: ROBOTS.TXT DIRECTIVES AUDITOR
+# ──────────────────────────────────────────────────────────────────────────────
+
+def render_robots_scanner(name: str, url: str):
+    _page_header(f"🤖  {get_uni_short(name).upper()} ROBOTS.TXT VALIDATOR",
+                 "CRAWLER ROUTING TELEMETRY · DISALLOW DIRECTIVES")
+                 
+    _md("""
+    <div style="background:rgba(10,22,40,0.45);border:1px solid rgba(0,212,255,0.12);
+    border-radius:8px;padding:1.1rem;margin-bottom:1.5rem;line-height:1.6;font-size:0.82rem;color:#7a9bb5;">
+        Fetch and parse the robots.txt instructions file for this domain to audit crawler directives, disallow restrictions, and verify the structural declaration of the XML sitemap.
+    </div>
+    """)
+    
+    default_robots = url.rstrip("/") + "/robots.txt" if url else "https://sabsu.edu.pk/robots.txt"
+    
+    col_input, col_btn = st.columns([3, 1])
+    with col_input:
+        robots_url = st.text_input("Robots.txt URL", value=default_robots, label_visibility="collapsed")
+    with col_btn:
+        run_scan = st.button("🔎  RUN ROBOTS SCAN", use_container_width=True)
+        
+    if run_scan:
+        if not robots_url.strip():
+            st.error("Please enter a valid robots.txt URL.")
+            return
+            
+        prog = st.progress(0, text="📡  Requesting robots.txt file...")
+        try:
+            headers = {"User-Agent": "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html) SentinelBot/1.0"}
+            r = requests.get(robots_url.strip(), headers=headers, timeout=8, verify=False)
+            prog.progress(60, text="📦  Parsing directives payload...")
+            
+            if r.status_code != 200:
+                st.error(f"⛔  HTTP Fail: Server returned status code {r.status_code}")
+                return
+                
+            prog.progress(100, text="✦  Analysis complete.")
+            time.sleep(0.4)
+            prog.empty()
+            
+            content = r.text
+            
+            # Parsing lines
+            directives = []
+            sitemaps_declared = []
+            disallow_count = 0
+            allow_count = 0
+            
+            for line in content.splitlines():
+                line_stripped = line.strip()
+                if not line_stripped or line_stripped.startswith("#"):
+                    continue
+                if ":" in line_stripped:
+                    parts = line_stripped.split(":", 1)
+                    directive = parts[0].strip().lower()
+                    value = parts[1].strip()
+                    
+                    if directive == "user-agent":
+                        directives.append({"Type": "User-Agent", "Value": value})
+                    elif directive == "disallow":
+                        disallow_count += 1
+                        directives.append({"Type": "Disallow", "Value": value})
+                    elif directive == "allow":
+                        allow_count += 1
+                        directives.append({"Type": "Allow", "Value": value})
+                    elif directive == "sitemap":
+                        sitemaps_declared.append(value)
+                        directives.append({"Type": "Sitemap", "Value": value})
+            
+            st.success("✦  **Robots.txt Scan Complete.** File parsed successfully.")
+            
+            # Metrics
+            k1, k2, k3 = st.columns(3)
+            k1.metric("STATUS CODE", f"{r.status_code} OK", "Accessible to Googlebot" if r.status_code == 200 else "Crawl blocked")
+            k2.metric("DIRECTIVES AUDITED", f"{len(directives)} rules", f"{disallow_count} disallows | {allow_count} allows")
+            k3.metric("SITEMAPS DECLARED", f"{len(sitemaps_declared)} sitemaps", "Optimized discovery" if sitemaps_declared else "Missing declaration")
+            
+            # Display file content
+            col_left, col_right = st.columns([1, 1], gap="large")
+            with col_left:
+                st.markdown("<div style='font-family:Share Tech Mono;font-size:0.8rem;color:#00d4ff;margin-bottom:0.4rem;text-transform:uppercase;'>■ Raw Robots.txt Content</div>", unsafe_allow_html=True)
+                st.code(content, language="text")
+                
+            with col_right:
+                st.markdown("<div style='font-family:Share Tech Mono;font-size:0.8rem;color:#00d4ff;margin-bottom:0.4rem;text-transform:uppercase;'>■ Audited Directives Directory</div>", unsafe_allow_html=True)
+                if directives:
+                    st.dataframe(pd.DataFrame(directives), use_container_width=True, hide_index=True)
+                else:
+                    st.warning("No standard directives found in this file.")
+                    
+                if sitemaps_declared:
+                    st.info(f"💡 SITEMAP DISCOVERY: Found sitemap declared at **{sitemaps_declared[0]}**. Make sure this matches your scanned sitemap XML.")
+                else:
+                    st.warning("⚠️ SITEMAP MISSING: No sitemap path declared in robots.txt. Google recommends declaring the sitemap path here to help crawlers discover your content automatically.")
+                    
+        except Exception as e:
+            st.error(f"⛔  Could not fetch robots.txt: {e}")
+
+
+# ──────────────────────────────────────────────────────────────────────────────
 #  PAGE 2: SABS DEEP AUDIT
 # ──────────────────────────────────────────────────────────────────────────────
 
@@ -1755,6 +1856,53 @@ def render_deep_audit(d: dict, name: str = "SABS University"):
                 use_container_width=True, hide_index=True)
     elif ti > 0:
         st.success("✦  ALL IMAGES HAVE ALT ATTRIBUTES — Perfect accessibility compliance.")
+
+    # ── Content Analysis & Keyword Density ────────────────────────────────────
+    st.markdown("<br>", unsafe_allow_html=True)
+    _section_header("CONTENT SEMANTICS — TOP FREQUENCY KEYWORDS")
+    
+    kdf = d.get("keywords_df", None)
+    if kdf is not None and not kdf.empty:
+        # Render a gorgeous horizontal Plotly bar chart
+        fig_keys = go.Figure()
+        kdf_sorted = kdf.sort_values("Frequency", ascending=True)
+        
+        fig_keys.add_trace(go.Bar(
+            x=kdf_sorted["Frequency"],
+            y=kdf_sorted["Keyword"],
+            orientation="h",
+            marker=dict(
+                color="rgba(0, 212, 255, 0.6)",
+                line=dict(color="#00d4ff", width=1.5)
+            ),
+            hovertemplate="<b>%{y}</b><br>Frequency: %{x}<extra></extra>"
+        ))
+        
+        fig_keys.update_layout(
+            paper_bgcolor="rgba(0,0,0,0)",
+            plot_bgcolor="rgba(0,0,0,0)",
+            font=dict(family="Share Tech Mono, monospace", color="#7a9bb5", size=11),
+            height=320,
+            margin=dict(l=120, r=20, t=10, b=20),
+            xaxis=dict(
+                title=dict(text="FREQUENCY OF OCCURRENCE", font=dict(family="Share Tech Mono", color="#3d5a73", size=10)),
+                gridcolor="rgba(0,212,255,0.06)",
+                linecolor="rgba(0,212,255,0.1)"
+            ),
+            yaxis=dict(
+                gridcolor="rgba(0,0,0,0)",
+                tickfont=dict(family="Share Tech Mono", size=10, color="#7a9bb5")
+            )
+        )
+        
+        col_c1, col_c2 = st.columns([2, 1], gap="large")
+        with col_c1:
+            st.plotly_chart(fig_keys, use_container_width=True, config={"displayModeBar": False})
+        with col_c2:
+            st.info("🎯 CONTENT DENSITY SIGNAL: SABS homepage semantic density is audited above. Google uses these multi-word phrases to map SABS's relevance for query topics. Ideally, target keywords like 'Fine Arts Admissions' or 'Design University Karachi' should show prominent frequency.")
+            st.dataframe(kdf.rename(columns={"Keyword": "Semantic Phrase", "Frequency": "Count"}), use_container_width=True, hide_index=True)
+    else:
+        st.warning("No keyword density analytics available for this target.")
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -2420,11 +2568,17 @@ else:
         elif "error" in sabs_data:
             st.error(f"⛔  Could not reach {sabs_name}: {sabs_data['error']}")
         else:
-            sub_tab_audit, sub_tab_sitemap = st.tabs(["📄 PAGE-LEVEL DIAGNOSTICS", "🔗 SITEMAP.XML DEPTH SCANNER"])
+            sub_tab_audit, sub_tab_sitemap, sub_tab_robots = st.tabs([
+                "📄 PAGE-LEVEL DIAGNOSTICS",
+                "🔗 SITEMAP.XML CRAWL SCANNER",
+                "🤖 ROBOTS.TXT VALIDATOR"
+            ])
             with sub_tab_audit:
                 render_deep_audit(sabs_data, sabs_name)
             with sub_tab_sitemap:
                 render_sitemap_scanner(sabs_name, url_map.get(sabs_name, ""))
+            with sub_tab_robots:
+                render_robots_scanner(sabs_name, url_map.get(sabs_name, ""))
 
     with tab_prescription:
         if sabs_data is None:
