@@ -1031,7 +1031,7 @@ def render_launcher_ui(is_re_run=False):
             letter-spacing:0.25em;">SABS DIGITAL DOMINANCE & TECHNICAL SEO WAR ROOM</div>
             <div style="font-family:'Share Tech Mono',monospace;font-size:0.75rem;color:#3d5a73;
             letter-spacing:0.12em;margin-top:0.6rem;text-transform:uppercase;">
-                Competitive Intelligence Probe for Pakistani Art & Design Institutions
+                Competitive Intelligence Probe for Pakistani Art & Design Institutions • Designed by Lokesh Kumar
             </div>
         </div>
         """)
@@ -2533,7 +2533,7 @@ else:
         _md(f"""
         <div style="padding-top:0.4rem;">
             <span style="font-family:'Orbitron',monospace;font-size:1.8rem;font-weight:900;color:#00d4ff;text-shadow:0 0 10px rgba(0,212,255,0.5);letter-spacing:0.12em;">⚔ SENTINEL</span>
-            <span style="font-family:'Share Tech Mono',monospace;font-size:0.75rem;color:#3d5a73;margin-left:1rem;letter-spacing:0.15em;">v1.0 SCAN COMPLETE — PRIMARY TARGET: {sabs_name.upper()}</span>
+            <span style="font-family:'Share Tech Mono',monospace;font-size:0.75rem;color:#3d5a73;margin-left:1rem;letter-spacing:0.15em;">v1.0 SCAN COMPLETE • DEVELOPED BY LOKESH KUMAR • TARGET: {sabs_name.upper()}</span>
         </div>
         """)
     with col_hdr_b:
@@ -2598,3 +2598,12 @@ else:
             st.error(f"⛔  Could not reach {sabs_name}: {sabs_data['error']}")
         else:
             render_developer_tools(sabs_name, sabs_data)
+
+    # Footer inside results page
+    st.markdown("<br><br><br>", unsafe_allow_html=True)
+    _md("""
+    <div style="font-family:'Share Tech Mono',monospace;font-size:0.65rem;color:#1e3a4a;text-align:center;line-height:1.7;">
+    SENTINEL v1.0 · SABS ASSESSMENT 2026 · DEVELOPED BY LOKESH KUMAR (SOFTWARE ENGINEERING DIVISION)<br>
+    PAKISTAN ART SCHOOL INTELLIGENCE SERVICE · ALL PROBES ACTIVE
+    </div>
+    """)
