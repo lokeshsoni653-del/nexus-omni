@@ -1,6 +1,6 @@
-# OmniMind AI — Render Blueprint Infrastructure-as-Code Configuration (Free Tier Optimized)
+# OmniMind AI — Render Blueprint Infrastructure-as-Code Configuration (Free Tier Compatible)
 services:
-  # ── 1. FastAPI Core Engine Web Service ────────────────────────────────────
+  # ── 1. FastAPI Core Engine & Embedded Worker Web Service ─────────────────
   - type: web
     name: omnimind-backend
     env: python
@@ -18,39 +18,19 @@ services:
           name: omnimind-redis
           property: connectionString
       - key: CELERY_TASK_ALWAYS_EAGER
-        value: "false"
+        value: "true"
       - key: SECRET_KEY
         generateValue: true
       - key: JWT_SECRET_KEY
         generateValue: true
 
-  # ── 2. Celery Asynchronous Agent Worker Pool ──────────────────────────────
-  - type: worker
-    name: omnimind-celery-worker
-    env: python
-    plan: free
-    buildCommand: pip install -r requirements.txt
-    startCommand: python run_worker.py
-    envVars:
-      - key: DATABASE_URL
-        fromDatabase:
-          name: omnimind-db
-          property: connectionString
-      - key: REDIS_URL
-        fromService:
-          type: redis
-          name: omnimind-redis
-          property: connectionString
-      - key: CELERY_TASK_ALWAYS_EAGER
-        value: "false"
-
-  # ── 3. Managed Redis Instance ─────────────────────────────────────────────
+  # ── 2. Managed Redis Instance ─────────────────────────────────────────────
   - type: redis
     name: omnimind-redis
     plan: free
     ipAllowList: []
 
-# ── 4. Managed PostgreSQL Database ───────────────────────────────────────────
+# ── 3. Managed PostgreSQL Database ───────────────────────────────────────────
 databases:
   - name: omnimind-db
     databaseName: omnimind_db
