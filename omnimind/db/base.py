@@ -1,7 +1,7 @@
 """
 OmniMind AI — SQLAlchemy Database Engine & Session Factory
 
-Supports SQLite (dev/test) and PostgreSQL (production) with automatic column migration.
+Supports SQLite (dev/test) and PostgreSQL (production) with automatic driver fix.
 """
 import logging
 from typing import Generator
@@ -19,15 +19,24 @@ _SessionLocal = None
 _tables_created = False
 
 
+def _normalize_db_url(url: str) -> str:
+    """Normalize Render / Supabase PostgreSQL connection strings."""
+    if url.startswith("postgres://"):
+        url = url.replace("postgres://", "postgresql://", 1)
+    return url
+
+
 def get_engine(db_url: str = None):
     """Create or return cached SQLAlchemy engine."""
     global _engine
     if _engine is None or db_url is not None:
         from config import settings
-        url = db_url or settings.DATABASE_URL
+        raw_url = db_url or settings.DATABASE_URL
+        url = _normalize_db_url(raw_url)
         connect_args = {}
         if url.startswith("sqlite"):
             connect_args["check_same_thread"] = False
+
         engine = create_engine(
             url,
             echo=False,
@@ -51,26 +60,27 @@ def create_all_tables(db_url: str = None):
 
     # Auto-migrate missing columns for SQLite dev environment
     try:
-        inspector = inspect(engine)
-        if "users" in inspector.get_table_names():
-            user_cols = [c["name"] for c in inspector.get_columns("users")]
-            with engine.begin() as conn:
-                if "hashed_password" not in user_cols:
-                    conn.execute(text("ALTER TABLE users ADD COLUMN hashed_password VARCHAR(255)"))
+        if engine.name == "sqlite":
+            inspector = inspect(engine)
+            if "users" in inspector.get_table_names():
+                user_cols = [c["name"] for c in inspector.get_columns("users")]
+                with engine.begin() as conn:
+                    if "hashed_password" not in user_cols:
+                        conn.execute(text("ALTER TABLE users ADD COLUMN hashed_password VARCHAR(255)"))
 
-        if "documents" in inspector.get_table_names():
-            doc_cols = [c["name"] for c in inspector.get_columns("documents")]
-            with engine.begin() as conn:
-                if "s3_key" not in doc_cols:
-                    conn.execute(text("ALTER TABLE documents ADD COLUMN s3_key VARCHAR(500)"))
+            if "documents" in inspector.get_table_names():
+                doc_cols = [c["name"] for c in inspector.get_columns("documents")]
+                with engine.begin() as conn:
+                    if "s3_key" not in doc_cols:
+                        conn.execute(text("ALTER TABLE documents ADD COLUMN s3_key VARCHAR(500)"))
 
-        if "workflows" in inspector.get_table_names():
-            wf_cols = [c["name"] for c in inspector.get_columns("workflows")]
-            with engine.begin() as conn:
-                if "pdf_report_path" not in wf_cols:
-                    conn.execute(text("ALTER TABLE workflows ADD COLUMN pdf_report_path TEXT"))
-                if "pdf_report_url" not in wf_cols:
-                    conn.execute(text("ALTER TABLE workflows ADD COLUMN pdf_report_url TEXT"))
+            if "workflows" in inspector.get_table_names():
+                wf_cols = [c["name"] for c in inspector.get_columns("workflows")]
+                with engine.begin() as conn:
+                    if "pdf_report_path" not in wf_cols:
+                        conn.execute(text("ALTER TABLE workflows ADD COLUMN pdf_report_path TEXT"))
+                    if "pdf_report_url" not in wf_cols:
+                        conn.execute(text("ALTER TABLE workflows ADD COLUMN pdf_report_url TEXT"))
     except Exception as e:
         logger.warning(f"Auto-migration check skipped: {e}")
 
