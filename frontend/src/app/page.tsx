@@ -127,7 +127,8 @@ export default function App() {
   const [uploadedDocIds, setUploadedDocIds] = useState<string[]>([]);
   const [serverStatus, setServerStatus] = useState<'online' | 'offline' | 'checking'>('checking');
 
-  const API_BASE = 'http://localhost:8000';
+  const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://omnimind-backend-u94t.onrender.com';
+  const WS_BASE = process.env.NEXT_PUBLIC_WS_URL || 'wss://omnimind-backend-u94t.onrender.com';
 
   // Check Backend Server Status
   useEffect(() => {
@@ -143,7 +144,7 @@ export default function App() {
     checkServer();
     const interval = setInterval(checkServer, 10000);
     return () => clearInterval(interval);
-  }, []);
+  }, [API_BASE]);
 
   // React Flow Handlers
   const onNodesChange = useCallback(
@@ -367,7 +368,7 @@ export default function App() {
             isOpen={isTerminalOpen}
             onClose={() => setIsTerminalOpen(false)}
             workflowId={activeWorkflowId}
-            wsBaseUrl="ws://localhost:8000"
+            wsBaseUrl={WS_BASE}
           />
         </main>
       </div>

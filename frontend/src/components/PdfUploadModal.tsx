@@ -14,7 +14,7 @@ export const PdfUploadModal: React.FC<PdfUploadModalProps> = ({
   isOpen,
   onClose,
   onPdfUploaded,
-  apiBaseUrl = 'http://localhost:8000',
+  apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://omnimind-backend-u94t.onrender.com',
 }) => {
   const [file, setFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -43,8 +43,10 @@ export const PdfUploadModal: React.FC<PdfUploadModalProps> = ({
     const formData = new FormData();
     formData.append('file', file);
 
+    const targetUrl = apiBaseUrl || 'https://omnimind-backend-u94t.onrender.com';
+
     try {
-      const response = await fetch(`${apiBaseUrl}/upload-pdf`, {
+      const response = await fetch(`${targetUrl}/upload-pdf`, {
         method: 'POST',
         body: formData,
       });
