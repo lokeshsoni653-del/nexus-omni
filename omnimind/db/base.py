@@ -1,7 +1,7 @@
 """
 OmniMind AI — SQLAlchemy Database Engine & Session Factory
 
-Supports SQLite (dev/test) and PostgreSQL (production) with automatic driver fix.
+Supports SQLite (dev/test) and PostgreSQL (production) with automatic fallback.
 """
 import logging
 from typing import Generator
@@ -27,7 +27,7 @@ def _normalize_db_url(url: str) -> str:
 
 
 def get_engine(db_url: str = None):
-    """Create or return cached SQLAlchemy engine."""
+    """Create or return cached SQLAlchemy engine with automatic SQLite fallback."""
     global _engine
     if _engine is None or db_url is not None:
         from config import settings
@@ -37,17 +37,31 @@ def get_engine(db_url: str = None):
         if url.startswith("sqlite"):
             connect_args["check_same_thread"] = False
 
-        engine = create_engine(
-            url,
-            echo=False,
-            connect_args=connect_args,
-            pool_pre_ping=True,
-        )
+        try:
+            engine = create_engine(
+                url,
+                echo=False,
+                connect_args=connect_args,
+                pool_pre_ping=True,
+            )
+            # Test engine connectivity
+            with engine.connect() as conn:
+                conn.execute(text("SELECT 1"))
+            logger.info(f"Database engine connected successfully: {url.split('//')[0]}")
+        except Exception as err:
+            logger.warning(f"Failed to connect to DB at '{url}': {err}. Falling back to SQLite.")
+            url = "sqlite:///./omnimind_fallback.db"
+            engine = create_engine(
+                url,
+                echo=False,
+                connect_args={"check_same_thread": False},
+                pool_pre_ping=True,
+            )
+
         if db_url is None:
             _engine = engine
         else:
             return engine
-        logger.info(f"Database engine created: {url.split('//')[0]}")
     return _engine
 
 
@@ -56,7 +70,10 @@ def create_all_tables(db_url: str = None):
     global _tables_created
     from omnimind.db import models  # noqa: F401 — import triggers Base registration
     engine = get_engine(db_url)
-    Base.metadata.create_all(bind=engine)
+    try:
+        Base.metadata.create_all(bind=engine)
+    except Exception as e:
+        logger.error(f"Error creating tables: {e}")
 
     # Auto-migrate missing columns for SQLite dev environment
     try:

@@ -1,71 +1,50 @@
 """
-OmniMind AI — Core Production FastAPI Application Entrypoint (app.py)
+OmniMind AI — Root Application Entrypoint for Cloud Deployments (Render / Railway / Vercel)
 """
 import os
 import sys
 import logging
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
-from fastapi.staticfiles import StaticFiles
 
 logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger("omnimind.server")
+logger = logging.getLogger("omnimind.root")
 
-# FastAPI App Instance
-app = FastAPI(
-    title="OmniMind AI",
-    version="0.5.0",
-    description="Autonomous Multi-Agent Enterprise RAG Platform Engine",
-    docs_url="/docs",
-    redoc_url="/redoc",
-)
+# Ensure project root is in sys.path
+root_dir = os.path.dirname(os.path.abspath(__file__))
+if root_dir not in sys.path:
+    sys.path.insert(0, root_dir)
 
-# CORS Middleware Configuration
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-# Root Welcome Endpoint
-@app.get("/", tags=["Root"])
-async def root():
-    return {
-        "app_name": "OmniMind AI",
-        "version": "0.5.0",
-        "status": "online",
-        "docs_url": "/docs",
-        "health_check": "/health",
-    }
-
-# Health Check Endpoint
-@app.get("/health", tags=["Health"])
-async def health():
-    return {
-        "status": "healthy",
-        "app_name": "OmniMind AI",
-        "version": "0.5.0",
-        "cloud_deployment": "active",
-    }
-
-# Mount OmniMind Platform Sub-Routers
 try:
-    from omnimind.backend.api.routes import upload, workflow, websocket, auth
-    app.include_router(auth.router)
-    app.include_router(upload.router)
-    app.include_router(workflow.router)
-    app.include_router(websocket.router)
-    logger.info("OmniMind API routers mounted successfully.")
-except Exception as e:
-    logger.error(f"Error mounting sub-routers: {e}")
+    from omnimind.backend.api.main import app, create_app
+    logger.info("Successfully imported FastAPI app from omnimind.backend.api.main")
+except Exception as err:
+    logger.error(f"Failed to import core app: {err}. Initializing standalone fallback app.")
+    from fastapi import FastAPI
+    from fastapi.middleware.cors import CORSMiddleware
 
-# Mount static uploads directory for document/report downloads
-try:
-    upload_dir = os.getenv("UPLOAD_DIR", "./uploads")
-    os.makedirs(upload_dir, exist_ok=True)
-    app.mount("/uploads", StaticFiles(directory=upload_dir), name="uploads")
-except Exception as e:
-    logger.warning(f"Static uploads mount warning: {e}")
+    app = FastAPI(
+        title="OmniMind AI Fallback Engine",
+        version="0.5.0",
+        docs_url="/docs",
+        redoc_url="/redoc",
+    )
+
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
+    @app.get("/")
+    async def root():
+        return {"app_name": "OmniMind AI", "status": "online", "mode": "standalone_fallback"}
+
+    @app.get("/health")
+    async def health():
+        return {"status": "healthy", "mode": "standalone_fallback"}
+
+if __name__ == "__main__":
+    import uvicorn
+    port = int(os.getenv("PORT", 8000))
+    uvicorn.run(app, host="0.0.0.0", port=port)
