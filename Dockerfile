@@ -22,4 +22,4 @@ COPY . .
 EXPOSE 8000
 
 # Launch Uvicorn server dynamically reading PORT environment variable
-CMD ["sh", "-c", "uvicorn omnimind.backend.api.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+CMD ["sh", "-c", "uvicorn app:app --host 0.0.0.0 --port ${PORT:-8000}"]

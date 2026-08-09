@@ -4,7 +4,6 @@ OmniMind AI — Server Runner Entrypoint
 import os
 import sys
 import uvicorn
-from config import settings
 
 if __name__ == "__main__":
     port_env = os.getenv("PORT")
@@ -15,11 +14,10 @@ if __name__ == "__main__":
     else:
         port = 8000
 
-    print(f"Starting {settings.APP_NAME} FastAPI server on host 0.0.0.0:{port}")
+    print(f"Starting OmniMind AI FastAPI server on host 0.0.0.0:{port}")
     uvicorn.run(
-        "omnimind.backend.api.main:app",
+        "app:app",
         host="0.0.0.0",
         port=port,
-        reload=settings.DEBUG,
         log_level="info",
     )
