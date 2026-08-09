@@ -13,6 +13,9 @@ from omnimind.tools import (
     ChromaPDFQueryTool
 )
 from generate_sample_pdf import create_sample_pdf
+from omnimind.backend.api.main import app, create_app  # Export app for Render / Uvicorn
+
+__all__ = ["app", "create_app"]
 
 if sys.platform == "win32":
     try:
@@ -71,7 +74,7 @@ async def main():
     orchestrator = OrchestratorAgent(tool_registry=tools, memory=memory)
     worker = WorkerAgent(tool_registry=tools, memory=memory)
     rag_agent = RAGAgent(tool_registry=tools, memory=memory)
-    reviewer = ReviewerAgent(tool_registry=tools, memory=memory)
+    reviewer = ReviewerAgent(tool_reviewer=tools, memory=memory) if hasattr(ReviewerAgent, 'tool_reviewer') else ReviewerAgent(tool_registry=tools, memory=memory)
 
     # Equip worker and RAG agent with ChromaPDFQueryTool explicitly
     worker.register_tool(chroma_tool)
