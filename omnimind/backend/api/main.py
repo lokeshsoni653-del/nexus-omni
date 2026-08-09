@@ -48,6 +48,17 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
+    # Root Welcome Endpoint
+    @app.get("/", tags=["Root"])
+    async def root():
+        return {
+            "app_name": settings.APP_NAME,
+            "version": settings.APP_VERSION,
+            "status": "online",
+            "documentation": "/docs",
+            "health_check": "/health",
+        }
+
     # Include API Routers
     app.include_router(auth.router)
     app.include_router(upload.router)
