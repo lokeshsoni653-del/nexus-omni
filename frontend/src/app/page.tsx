@@ -339,6 +339,7 @@ export default function App() {
         onOpenAuthModal={() => setIsAuthModalOpen(true)}
         apiKey={apiKey}
         pdfReportUrl={pdfReportUrl}
+        apiBaseUrl={API_BASE}
       />
 
       {/* Main Workspace Layout */}

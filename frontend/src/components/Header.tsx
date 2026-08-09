@@ -16,6 +16,7 @@ interface HeaderProps {
   onOpenAuthModal: () => void;
   apiKey: string;
   pdfReportUrl: string | null;
+  apiBaseUrl?: string;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -31,7 +32,14 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenAuthModal,
   apiKey,
   pdfReportUrl,
+  apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://omnimind-backend-u94t.onrender.com',
 }) => {
+  const fullPdfUrl = pdfReportUrl
+    ? pdfReportUrl.startsWith('/')
+      ? `${apiBaseUrl}${pdfReportUrl}`
+      : pdfReportUrl
+    : null;
+
   return (
     <header className="h-16 glass-panel border-b border-white/10 px-6 flex items-center justify-between gap-4 z-20">
       {/* Brand & Platform Identity */}
@@ -86,9 +94,9 @@ export const Header: React.FC<HeaderProps> = ({
         </button>
 
         {/* PDF Download Button if report is generated */}
-        {pdfReportUrl && (
+        {fullPdfUrl && (
           <a
-            href={pdfReportUrl.startsWith('/') ? `http://localhost:8000${pdfReportUrl}` : pdfReportUrl}
+            href={fullPdfUrl}
             target="_blank"
             rel="noreferrer"
             className="h-10 px-3.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs shadow-lg shadow-emerald-900/30 flex items-center gap-1.5 transition-all animate-pulse"
