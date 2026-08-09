@@ -1,9 +1,10 @@
-# OmniMind AI — Render Blueprint Infrastructure-as-Code Configuration
+# OmniMind AI — Render Blueprint Infrastructure-as-Code Configuration (Free Tier Optimized)
 services:
   # ── 1. FastAPI Core Engine Web Service ────────────────────────────────────
   - type: web
     name: omnimind-backend
     env: python
+    plan: free
     buildCommand: pip install -r requirements.txt
     startCommand: python run_server.py 8000
     envVars:
@@ -27,6 +28,7 @@ services:
   - type: worker
     name: omnimind-celery-worker
     env: python
+    plan: free
     buildCommand: pip install -r requirements.txt
     startCommand: python run_worker.py
     envVars:
@@ -45,6 +47,7 @@ services:
   # ── 3. Managed Redis Instance ─────────────────────────────────────────────
   - type: redis
     name: omnimind-redis
+    plan: free
     ipAllowList: []
 
 # ── 4. Managed PostgreSQL Database ───────────────────────────────────────────
@@ -52,3 +55,4 @@ databases:
   - name: omnimind-db
     databaseName: omnimind_db
     user: omnimind_user
+    plan: free
