@@ -9,7 +9,7 @@ from fastapi.staticfiles import StaticFiles
 
 from config import settings
 from omnimind.db.base import create_all_tables
-from omnimind.backend.api.routes import upload, workflow, websocket, auth
+from omnimind.backend.api.routes import upload, workflow, websocket, auth, chat
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("omnimind.backend.api.main")
@@ -64,6 +64,7 @@ def create_app() -> FastAPI:
     app.include_router(upload.router)
     app.include_router(workflow.router)
     app.include_router(websocket.router)
+    app.include_router(chat.router)
 
     # Mount static files directory for local PDF report downloads
     import os

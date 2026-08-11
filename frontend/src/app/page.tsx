@@ -18,6 +18,8 @@ import { VisualCanvas } from '../components/VisualCanvas';
 import { PdfUploadModal } from '../components/PdfUploadModal';
 import { TerminalConsole } from '../components/TerminalConsole';
 import { AuthModal } from '../components/AuthModal';
+import { GlobalDragDropOverlay } from '../components/GlobalDragDropOverlay';
+import { DocumentChatPanel } from '../components/DocumentChatPanel';
 import { CustomNodeData, AgentRoleType, ToolKindType } from '../types/workflow';
 import { convertGraphToWorkflowPayload } from '../utils/graphToJson';
 
@@ -122,6 +124,7 @@ export default function App() {
   const [isTerminalOpen, setIsTerminalOpen] = useState<boolean>(true);
   const [isPdfModalOpen, setIsPdfModalOpen] = useState<boolean>(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
+  const [isChatPanelOpen, setIsChatPanelOpen] = useState<boolean>(false);
   const [apiKey, setApiKey] = useState<string>('');
   const [pdfReportUrl, setPdfReportUrl] = useState<string | null>(null);
   const [uploadedDocIds, setUploadedDocIds] = useState<string[]>([]);
@@ -145,6 +148,11 @@ export default function App() {
     const interval = setInterval(checkServer, 10000);
     return () => clearInterval(interval);
   }, [API_BASE]);
+
+  // Handle Global Drag & Drop PDF File
+  const handleGlobalFileDropped = (file: File) => {
+    setIsPdfModalOpen(true);
+  };
 
   // React Flow Handlers
   const onNodesChange = useCallback(
@@ -212,6 +220,14 @@ export default function App() {
       setNodes(initialNodes);
       setEdges(initialEdges);
       setGoal('Ingest enterprise policy PDF, query latency SLA targets, and summarize security compliance requirements.');
+    } else if (templateName === 'legal_contract') {
+      setNodes(initialNodes);
+      setEdges(initialEdges);
+      setGoal('Audit uploaded vendor legal contract PDF: extract liability caps, penalty SLA clauses, and termination risks.');
+    } else if (templateName === 'financial_due_diligence') {
+      setNodes(initialNodes);
+      setEdges(initialEdges);
+      setGoal('Analyze earnings report PDF: extract Q3 revenue figures, EBITDA operating margins, cash flow, and debt risks.');
     } else if (templateName === 'web_researcher') {
       const webNodes: Node<CustomNodeData>[] = [
         {
@@ -239,7 +255,7 @@ export default function App() {
       ];
       setNodes(webNodes);
       setEdges(webEdges);
-      setGoal('Research recent multi-agent SaaS architecture trends and synthesize competitive market analysis.');
+      setGoal('Research top enterprise AI agent platforms and vector database market trends in 2026.');
     }
   };
 
@@ -324,7 +340,10 @@ export default function App() {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-[#090d16] text-slate-100 overflow-hidden">
+    <div className="flex flex-col h-screen bg-[#090d16] text-slate-100 overflow-hidden relative">
+      {/* Global Drag & Drop Overlay */}
+      <GlobalDragDropOverlay onFileDropped={handleGlobalFileDropped} />
+
       {/* Top Header */}
       <Header
         goal={goal}
@@ -350,6 +369,7 @@ export default function App() {
           onAddToolNode={handleAddToolNode}
           onLoadTemplate={handleLoadTemplate}
           onOpenPdfModal={() => setIsPdfModalOpen(true)}
+          onOpenChatPanel={() => setIsChatPanelOpen(!isChatPanelOpen)}
         />
 
         {/* Visual React Flow Canvas Area */}
@@ -373,6 +393,14 @@ export default function App() {
           />
         </main>
       </div>
+
+      {/* Interactive Document Q&A Chat Panel */}
+      <DocumentChatPanel
+        isOpen={isChatPanelOpen}
+        onClose={() => setIsChatPanelOpen(false)}
+        apiBaseUrl={API_BASE}
+        apiKey={apiKey}
+      />
 
       {/* PDF Upload Modal */}
       <PdfUploadModal

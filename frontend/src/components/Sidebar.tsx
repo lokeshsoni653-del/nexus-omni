@@ -1,7 +1,7 @@
 "use client";
 
 import React from 'react';
-import { Bot, Cpu, Database, ShieldCheck, Globe, FileText, Terminal, Sparkles, Layers, PlusCircle } from 'lucide-react';
+import { Bot, Cpu, Database, ShieldCheck, Globe, FileText, Terminal, Sparkles, Layers, PlusCircle, MessageSquare, Scale, TrendingUp } from 'lucide-react';
 import { AgentRoleType, ToolKindType } from '../types/workflow';
 
 interface SidebarProps {
@@ -9,6 +9,7 @@ interface SidebarProps {
   onAddToolNode: (kind: ToolKindType) => void;
   onLoadTemplate: (templateName: string) => void;
   onOpenPdfModal: () => void;
+  onOpenChatPanel?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -16,6 +17,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onAddToolNode,
   onLoadTemplate,
   onOpenPdfModal,
+  onOpenChatPanel,
 }) => {
   return (
     <aside className="w-72 glass-panel border-r border-white/10 flex flex-col h-full z-10 select-none">
@@ -159,36 +161,62 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
         </div>
 
-        {/* Preset Templates */}
+        {/* Real-World Industry Workflows */}
         <div>
           <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-1.5">
-            ⚡ Preset Workflows
+            ⚡ Real-World Workflows
           </h3>
           <div className="space-y-2">
             <button
-              onClick={() => onLoadTemplate('enterprise_rag')}
-              className="w-full text-left p-2.5 rounded-lg bg-gradient-to-r from-purple-900/40 to-emerald-900/40 border border-purple-500/30 hover:border-purple-400 transition-all"
+              onClick={() => onLoadTemplate('legal_contract')}
+              className="w-full text-left p-2.5 rounded-lg bg-gradient-to-r from-purple-900/50 to-indigo-900/50 border border-purple-500/40 hover:border-purple-300 transition-all"
             >
-              <div className="text-xs font-semibold text-purple-200">Enterprise Policy RAG</div>
-              <div className="text-[10px] text-slate-300">PDF Reader + Orchestrator + RAG + Reviewer</div>
+              <div className="flex items-center gap-2 mb-1">
+                <Scale className="w-3.5 h-3.5 text-purple-300" />
+                <div className="text-xs font-semibold text-purple-200">📑 Legal Contract Risk Audit</div>
+              </div>
+              <div className="text-[10px] text-slate-300">Extracts liability, SLA penalties & compliance clauses</div>
+            </button>
+
+            <button
+              onClick={() => onLoadTemplate('financial_due_diligence')}
+              className="w-full text-left p-2.5 rounded-lg bg-gradient-to-r from-emerald-900/50 to-teal-900/50 border border-emerald-500/40 hover:border-emerald-300 transition-all"
+            >
+              <div className="flex items-center gap-2 mb-1">
+                <TrendingUp className="w-3.5 h-3.5 text-emerald-300" />
+                <div className="text-xs font-semibold text-emerald-200">📈 Financial Due Diligence</div>
+              </div>
+              <div className="text-[10px] text-slate-300">Analyzes earnings, EBITDA margins & revenue risks</div>
             </button>
 
             <button
               onClick={() => onLoadTemplate('web_researcher')}
-              className="w-full text-left p-2.5 rounded-lg bg-gradient-to-r from-blue-900/40 to-cyan-900/40 border border-blue-500/30 hover:border-blue-400 transition-all"
+              className="w-full text-left p-2.5 rounded-lg bg-gradient-to-r from-blue-900/50 to-cyan-900/50 border border-blue-500/40 hover:border-blue-300 transition-all"
             >
-              <div className="text-xs font-semibold text-blue-200">Market Intelligence Team</div>
-              <div className="text-[10px] text-slate-300">Web Search + Worker + Python Code + Reviewer</div>
+              <div className="flex items-center gap-2 mb-1">
+                <Globe className="w-3.5 h-3.5 text-cyan-300" />
+                <div className="text-xs font-semibold text-blue-200">🔍 Market & Competitor Research</div>
+              </div>
+              <div className="text-[10px] text-slate-300">Queries live Google data & synthesizes market report</div>
             </button>
           </div>
         </div>
       </div>
 
-      {/* Upload PDF Drawer Trigger */}
-      <div className="p-4 border-t border-white/10 bg-slate-900/60">
+      {/* Action Buttons Footer */}
+      <div className="p-4 border-t border-white/10 bg-slate-900/60 space-y-2">
+        {onOpenChatPanel && (
+          <button
+            onClick={onOpenChatPanel}
+            className="w-full py-2 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-teal-300 border border-teal-500/30 font-medium text-xs flex items-center justify-center gap-2 transition-all"
+          >
+            <MessageSquare className="w-4 h-4 text-teal-400" /> Document Q&A Chat
+          </button>
+        )}
+
         <button
           onClick={onOpenPdfModal}
-          className="w-full py-2.5 px-3 rounded-lg bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-500 hover:to-emerald-500 text-white font-medium text-xs shadow-lg shadow-teal-900/30 flex items-center justify-center gap-2 transition-all"
+          className="w-full py-2.5 px-3 rounded-lg bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-500 hover:to-emerald-500 text-white font-semibold text-xs shadow-lg shadow-teal-900/30 flex items-center justify-center gap-2 transition-all"
         >
           <FileText className="w-4 h-4" /> Upload PDF Document
         </button>

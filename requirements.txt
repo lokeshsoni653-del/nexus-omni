@@ -17,6 +17,10 @@ langchain-text-splitters>=0.0.1
 pypdf>=3.17.0
 langchain-openai>=0.0.5
 
+# Live AI Providers
+google-generativeai>=0.3.0
+openai>=1.0.0
+
 # Database Drivers & ORM (PostgreSQL & SQLite)
 sqlalchemy>=2.0.0
 psycopg2-binary>=2.9.9
