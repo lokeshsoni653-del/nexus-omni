@@ -3,13 +3,17 @@ OmniMind AI — FastAPI Core Engine Application Entrypoint
 """
 import logging
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import JSONResponse
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 
 from config import settings
 from omnimind.db.base import create_all_tables
-from omnimind.backend.api.routes import upload, workflow, websocket, auth, chat
+from omnimind.backend.api.routes import upload, workflow, websocket, auth, chat, contract
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("omnimind.backend.api.main")
@@ -30,14 +34,20 @@ async def lifespan(app: FastAPI):
 
 def create_app() -> FastAPI:
     """FastAPI Application Factory."""
+    limiter = Limiter(key_func=get_remote_address, default_limits=["100/hour"])
+
     app = FastAPI(
         title=settings.APP_NAME,
         version=settings.APP_VERSION,
-        description="Autonomous Multi-Agent SaaS & Enterprise RAG Platform Backend Engine",
+        description="ContractIQ — AI-Powered Legal Contract Analyzer & Multi-Agent RAG Platform",
         lifespan=lifespan,
         docs_url="/docs",
         redoc_url="/redoc",
     )
+
+    # Attach SlowAPI rate limiter (Guardrail 4)
+    app.state.limiter = limiter
+    app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
     # Configure CORS for multi-tenant SaaS frontend
     app.add_middleware(
@@ -65,6 +75,7 @@ def create_app() -> FastAPI:
     app.include_router(workflow.router)
     app.include_router(websocket.router)
     app.include_router(chat.router)
+    app.include_router(contract.router)   # ContractIQ — contract analysis engine
 
     # Mount static files directory for local PDF report downloads
     import os

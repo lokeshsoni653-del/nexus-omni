@@ -162,3 +162,50 @@ class AgentLog(Base):
 
     def __repr__(self):
         return f"<AgentLog id={self.id} agent={self.agent_name} type={self.log_type}>"
+
+
+# ── ContractAnalysis Model ─────────────────────────────────────────────────────
+
+class RiskLevel(str, enum.Enum):
+    LOW      = "LOW"
+    MODERATE = "MODERATE"
+    HIGH     = "HIGH"
+    CRITICAL = "CRITICAL"
+
+
+class ContractAnalysis(Base):
+    """Stores every contract analysis run — supports free-tier tracking and shareable links."""
+    __tablename__ = "contract_analyses"
+
+    id              = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    share_token     = Column(String(36), unique=True, nullable=False, index=True,
+                             default=lambda: str(uuid.uuid4()))
+    # File info
+    filename        = Column(String(500), nullable=False)
+    file_size_bytes = Column(Integer, default=0)
+    page_count      = Column(Integer, default=0)
+    is_ocr          = Column(Boolean, default=False)   # True if scanned PDF OCR was used
+    is_chunked      = Column(Boolean, default=False)   # True if long-doc chunking was used
+    chunk_count     = Column(Integer, default=1)
+
+    # Analysis results
+    risk_score      = Column(Float, default=0.0)       # 0–100
+    risk_level      = Column(SAEnum(RiskLevel), default=RiskLevel.LOW)
+    contract_type   = Column(String(100), nullable=True)
+    favors_party    = Column(String(100), nullable=True)
+    analysis_json   = Column(JSON, default=dict)       # Full structured analysis
+
+    # PDF Report
+    pdf_report_path = Column(Text, nullable=True)
+    pdf_report_url  = Column(Text, nullable=True)
+
+    # Rate limiting / abuse prevention
+    client_ip       = Column(String(64), nullable=True, index=True)
+    user_id         = Column(String(36), ForeignKey("users.id"), nullable=True, index=True)
+    is_pro_analysis = Column(Boolean, default=False)
+
+    created_at      = Column(DateTime, default=datetime.utcnow, index=True)
+    completed_at    = Column(DateTime, nullable=True)
+
+    def __repr__(self):
+        return f"<ContractAnalysis id={self.id} risk={self.risk_level} score={self.risk_score}>"

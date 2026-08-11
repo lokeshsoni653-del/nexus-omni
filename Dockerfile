@@ -3,12 +3,17 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Install essential build tools & C-libraries for ChromaDB and C-extensions
+# Install essential build tools, C-libraries, and OCR engine
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     curl \
     libpq-dev \
     gcc \
+    # Tesseract OCR engine for scanned PDF fallback
+    tesseract-ocr \
+    tesseract-ocr-eng \
+    # poppler-utils required by pdf2image to convert PDF pages to images
+    poppler-utils \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements and install Python packages
